@@ -1,0 +1,74 @@
+---
+author:
+title: "EDAV Fall 2019 PSet 5, part A"
+output: pdf_document
+
+---
+```{r, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, echo = TRUE)
+```
+
+This assignment is designed to help you get started on the final project. Be sure to review the final project instructions (https://edav.info/project.html), in particular the new section on reproducible workflow (https://edav.info/project.html#reproducible-workflow), which summarizes principles that we've discussed in class.
+    
+### 1. The Team
+
+[2 points]
+
+a) Who's on the team? (Include names and UNIs)
+
+Han Xu(hx2282), Shuo Yang(sy2886), Lin Jiang(lj2493).
+
+b) How do you plan to divide up the work? (Grading is on a group basis. The point of asking is to encourage you to think about this.)
+
+We will have brain storming to get ideas and questions together. 
+Han Xu is responsible for data cleaning and data analyze 
+Shuo Yang is responsible for data visualization. 
+Lin Jiang is responsible for data visualization and making slides for presentation. 
+
+### 2. The Questions
+
+[6 points]
+
+List three questions that you hope you will be able to answer from your research.
+
+a) What's the trend between price, host response rate, bed type and avg review/number of reviews?
+
+b) Do the cleaning fee and deposit affect the price?
+
+c) Is there any relationship between district and room type/price.
+
+### 3. Which output format do you plan to use to submit the project? 
+
+[2 points]
+
+(You don't have to use the same format for this assignment -- PSet 5, part A -- and the final project itself.)
+
+Choices are:
+
+pdf_document  
+
+html_document  
+
+bookdown book: https://bookdown.org/yihui/bookdown/
+
+shiny app: https://shiny.rstudio.com/  
+
+(Remember that it's ok to have pieces of the project that don't fit into the chosen output format; in those cases you can provide links to the relevant material.)
+
+
+We plan to make html_document. 
+
+
+
+### 4. The Data
+
+What is your data source?  What is your method for importing data? Please be specific. Provide relevant information such as any obstacles you're encountering and what you plan to do to overcome them.
+
+[5 points]
+data source: http://insideairbnb.com/get-the-data.html
+The data source provides a dataset of information of airbnb. We plan to use the dataset
+for New York. The dataset is csv file. 
+
+### 5. Provide a short summary, including 2-3 graphs, of your initial investigations. 
+
+[10 points]
