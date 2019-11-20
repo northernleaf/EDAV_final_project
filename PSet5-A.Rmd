@@ -68,6 +68,7 @@ What is your data source?  What is your method for importing data? Please be spe
 data source: http://insideairbnb.com/get-the-data.html
 The data source provides a dataset of information of airbnb. We plan to use the dataset
 for New York. The dataset is csv file. 
+The data is not cleaned, so we need spend some time to tidy it. 
 
 ### 5. Provide a short summary, including 2-3 graphs, of your initial investigations. 
 
