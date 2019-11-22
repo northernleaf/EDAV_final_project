@@ -35,7 +35,7 @@ a) What's the trend between price, host response rate, bed type and avg review/n
 
 b) Do the cleaning fee and deposit affect the price?
 
-c) Is there any relationship between district and room type/price.
+c) Is there any relationship between district and room type/price. 
 
 ### 3. Which output format do you plan to use to submit the project? 
 
@@ -65,11 +65,25 @@ We plan to make html_document.
 What is your data source?  What is your method for importing data? Please be specific. Provide relevant information such as any obstacles you're encountering and what you plan to do to overcome them.
 
 [5 points]
-data source: http://insideairbnb.com/get-the-data.html
+Data source: http://insideairbnb.com/get-the-data.html
 The data source provides a dataset of information of airbnb. We plan to use the dataset
-for New York. The dataset is csv file. 
+for New York. The dataset is csv file, so we could just read it in normally. 
 The data is not cleaned, so we need spend some time to tidy it. 
 
+```{r include = FALSE}
+library(dplyr)
+library(tidyverse)
+```
+
+```{r}
+#Data Importing and Cleaning
+
+
+```
 ### 5. Provide a short summary, including 2-3 graphs, of your initial investigations. 
 
 [10 points]
+```{r}
+df <- read_csv("airbnb_201909_cleaned.csv",na = c("", "NA", "N/A"))
+str(df)
+```
