@@ -1,0 +1,123 @@
+---
+title: "Final Project"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+data <- read_csv("/Users/amber/Downloads/Columbia Related/5702 HW/EDAV_final_project/data/airbnb_201909.csv")
+
+data_by_region <- data %>%
+  group_by(neighbourhood_group_cleansed) %>%
+  summarize(count = n()) %>%
+  mutate(prop = count/sum(count)) %>%
+  ungroup()
+
+ggplot(data_by_region, aes(x=fct_reorder(neighbourhood_group_cleansed,count), y=count)) +
+  geom_bar(stat = "identity", fill = "lightblue", color = "black") +
+  labs(x = 'Neighborhood',
+       y = 'Listings',
+       title = 'Listings by Neighborhood') +
+  coord_flip()
+ 
+```
+
+
+```{r}
+library(ggplot2)
+ggplot(data, aes(x=price)) + 
+  geom_histogram(bins = 15, 
+                 col = "black",
+                 fill = 'lightblue') + 
+  labs(x = 'Price',
+       y = 'Listings',
+       title = 'Listing Price Range')
+```
+
+```{r}
+library(ggplot2)
+ggplot(data, aes(x=host_response_rate)) + 
+  geom_histogram(bins = 6, 
+                 col = "black",
+                 fill = 'lightblue') + 
+  labs(x = 'Host Response Rate',
+       y = 'Listings',
+       title = 'Listing Host Response Rate')
+```
+```{r}
+library(ggplot2)
+ggplot(data, aes(x=review_scores_rating)) + 
+  geom_histogram(bins = 15, 
+                 col = "black",
+                 fill = 'lightblue') + 
+  labs(x = 'Review Score Rating',
+       y = 'Listings',
+       title = 'Listing Review Scores')
+```
+
+
+```{r}
+library(parcoords)
+
+data_parallel <- data %>%
+  dplyr::select(price, host_response_rate, bed_type, review_scores_rating, number_of_reviews, neighbourhood_group_cleansed) %>%
+  filter(data$first_review > 2019-01-01) %>%
+  filter(!is.na(price) & !is.na(host_response_rate) & !is.na(review_scores_rating)) 
+
+names(data_parallel)[names(data_parallel) == 'neighbourhood_group_cleansed'] <- 'neighbourhoodColor'
+
+# data_parallel <- data_parallel %>%
+#   mutate(price_group = case_when(price <= 100 ~ '0-100',
+#                                   price <= 250 ~ '100-250',
+#                                   price <= 500 ~ '250-500',
+#                                   price <= 750 ~ '500-750',
+#                                   price <= 1000 ~ '750-1000',
+#                                   TRUE ~ '>1000')) %>%
+#   mutate(host_response_rate_group = case_when(host_response_rate <= 40 ~ 'Poor', 
+#                                   host_response_rate <= 80 ~ 'Acceptable',
+#                                   host_response_rate <= 90 ~ 'Decent',  
+#                                   TRUE ~ 'Excellent')) %>%
+#   mutate(review_scores_rating_group = case_when(review_scores_rating <= 50 ~ 'Poor',
+#                                   review_scores_rating <= 80 ~ 'Acceptable',
+#                                   review_scores_rating <= 90 ~ 'Great',
+#                                   TRUE ~ 'Excellent')) %>%
+#   select(-price, -host_response_rate, -review_scores_rating, -number_of_reviews)
+
+parcoords(data_parallel, 
+          color = list(
+          colorBy = "neighbourhoodColor"
+          , colorScale = "scaleOrdinal"
+          , colorScheme = "schemeCategory10"
+          ),
+          withD3 = TRUE,
+          reorderable = TRUE,
+          alpha = 0.5, 
+          brushMode = "1d-axes")
+```
+For initial investigation, we are interested in the relationship between price, host response rate, bed type, review score and number of ratings. After plotting the parallel coordinates for different neighborhoods, we see that Staten Island and Bronx share similar patterns, they have low price ranges, high host response rate, primarily real beds, high review scores and less reviews. Brooklyn and Queens share similar patterns, they have higher prices, varying host response rate and bed types, medium to high review scores and more reviews. For Manhattan, the patterns vary a lot. For example, we have prices ranging from super cheap to extermely expensive. And we also have all kinds of bed types like airbed and couch. This initial observation makes sense because we have the most data for Manhattan and depending on the actual location in Manhattan, the listings could differ a lot. For the next steps, we will need to divide up the actual prices/response rates/reviews scores into groups for better comparision to figure out the relationships between these factors. 
