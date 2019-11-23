@@ -1,8 +1,9 @@
 ---
-author:
 title: "EDAV Fall 2019 PSet 5, part A"
-output: pdf_document
-
+author: "null"
+output:
+  html_document:
+    df_print: paged
 ---
 ```{r, include=FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE, echo = TRUE)
@@ -83,7 +84,67 @@ library(tidyverse)
 ### 5. Provide a short summary, including 2-3 graphs, of your initial investigations. 
 
 [10 points]
+
+**Bar Chart - Listings by Neighborhood**
 ```{r}
-df <- read_csv("airbnb_201909_cleaned.csv",na = c("", "NA", "N/A"))
-str(df)
+library(tidyverse)
+library(ggplot2)
+data <- read_csv("/Users/amber/Downloads/Columbia Related/5702 HW/EDAV_final_project/data/airbnb_201909.csv")
+
+data_by_region <- data %>%
+  group_by(neighbourhood_group_cleansed) %>%
+  summarize(count = n()) %>%
+  mutate(prop = count/sum(count)) %>%
+  ungroup()
+
+ggplot(data_by_region, aes(x=fct_reorder(neighbourhood_group_cleansed,count), y=count)) +
+  geom_bar(stat = "identity", fill = "lightblue", color = "black") +
+  labs(x = 'Neighborhood',
+       y = 'Listings',
+       title = 'Listings by Neighborhood') +
+  coord_flip()
+ 
 ```
+
+The majority of the listings are in Brooklyn and Manhattan. 
+
+**Histogram - Listing Price Range**
+```{r}
+library(ggplot2)
+ggplot(data, aes(x=price)) + 
+  geom_histogram(bins = 15, 
+                 col = "black",
+                 fill = 'lightblue') + 
+  labs(x = 'Price',
+       y = 'Listings',
+       title = 'Listing Price Range')
+```
+
+We see that the majority of listings are between $100 to $250 per night. 
+
+**Parallel Coordinates - Initial Investigation**
+```{r}
+library(parcoords)
+
+data_parallel <- data %>%
+  dplyr::select(price, host_response_rate, bed_type, review_scores_rating, number_of_reviews, neighbourhood_group_cleansed) %>%
+  filter(data$first_review > 2019-01-01) %>%
+  filter(!is.na(price) & !is.na(host_response_rate) & !is.na(review_scores_rating)) 
+
+names(data_parallel)[names(data_parallel) == 'neighbourhood_group_cleansed'] <- 'neighbourhoodColor'
+
+parcoords(data_parallel, 
+          color = list(
+          colorBy = "neighbourhoodColor"
+          , colorScale = "scaleOrdinal"
+          , colorScheme = "schemeCategory10"
+          ),
+          withD3 = TRUE,
+          reorderable = TRUE,
+          alpha = 0.5, 
+          brushMode = "1d-axes")
+```
+
+For initial investigation, we are interested in the relationship between price, host response rate, bed type, review score and number of ratings. After plotting the parallel coordinates for different neighborhoods, we see that Staten Island and Bronx share similar patterns, they have low price ranges, high host response rate, primarily real beds, high review scores and less reviews. Brooklyn and Queens share similar patterns, they have higher prices, varying host response rate and bed types, medium to high review scores and more reviews. For Manhattan, the patterns vary a lot. For example, we have prices ranging from super cheap to extermely expensive. And we also have all kinds of bed types like airbed and couch. This initial observation makes sense because we have lots of data for Manhattan and depending on the actual location in Manhattan, the listings could differ a lot. 
+
+For the next steps, we will need to divide up the actual prices/response rates/reviews scores into smaller groups for better comparision to figure out the relationships between these factors. 
