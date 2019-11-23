@@ -31,6 +31,8 @@ Lin Jiang is responsible for data visualization and making slides for presentati
 
 List three questions that you hope you will be able to answer from your research.
 
+For the lists on Airbnb in New York City:
+
 a) What's the trend between price, host response rate, bed type and avg review/number of reviews?
 
 b) Do the cleaning fee and deposit affect the price?
@@ -65,25 +67,101 @@ We plan to make html_document.
 What is your data source?  What is your method for importing data? Please be specific. Provide relevant information such as any obstacles you're encountering and what you plan to do to overcome them.
 
 [5 points]
+
 Data source: http://insideairbnb.com/get-the-data.html
-The data source provides a dataset of information of airbnb. We plan to use the dataset
-for New York. The dataset is csv file, so we could just read it in normally. 
+The data source provides a dataset of information from airbnb. We plan to use the the most recent (Sep, 2019) dataset for New York. The dataset is csv file, so we could just download and read it in normally. 
 The data is not cleaned, so we need spend some time to tidy it. 
 
-```{r include = FALSE}
-library(dplyr)
+- The first obstacle is that the data file is  relatively large. The csv. file downlowded is more than 180MB. So we just select the columns relavent to our analysis. We also exclude lists that without reviews, as we want to focus on
+- Another obstacle is that some information is compressed into one cell, like amenities. Amenities compress all the amenities provided in to one lone string, and it is not seperated by simple delimiter. We have tried to transform amenities into a seperate tidy data frame. We will try to clean other similar columns.
+
+
+```{r load packages}
 library(tidyverse)
+library(ggplot2)
 ```
 
-```{r}
+```{r Data Importing and Cleaning}
 #Data Importing and Cleaning
+data<-read_csv("listings_201909.csv", na=c("","NA","N/A"))
 
+##select columns
+dat<-data%>%
+  select(-c(scrape_id:xl_picture_url))%>%
+  select(-host_url, -host_name, -host_location, -host_about,
+         -host_acceptance_rate, -host_thumbnail_url, -host_picture_url, 
+         -host_neighbourhood)%>%
+  select(-street,-city,-state, -market, -smart_location, -country, 
+         -country_code)%>%
+  select(-jurisdiction_names, -license,-weekly_price,-monthly_price, 
+         -square_feet)%>%
+  select(-c(calendar_updated:calendar_last_scraped)) 
 
+#dim(dat)  #48377    62
+
+##modify data type
+dat<-dat%>%
+  mutate_at(c("host_response_rate","extra_people",
+              "price","security_deposit","cleaning_fee"),
+            str_remove_all,pattern="[%$]")%>%
+  mutate_at(c("host_response_rate","extra_people",
+              "price","security_deposit","cleaning_fee"),
+            as.numeric)
+
+##select lists which have reviews
+dat1<-dat%>%filter(!is.na(first_review))
+#dim(dat1) #38726    62
+
+##output initial working data
+#write_csv(dat1,"./data/airbnb_201909.csv")
 ```
+
+
+```{r amenities}
+#split amenities into tidy data frame
+##function to modify amenities string
+split_amenities<-function(x){
+  #x is an input string
+  x<-str_replace_all(x,"[{}]",",") #remove {}
+  temp<-str_split(x,"\\\"")[[1]] #split by \"
+  temp[str_starts(temp,"[,]") | str_ends(temp,"[,]")]<-str_replace_all(temp[str_starts(temp,"[,]") | str_ends(temp,"[,]")],"[,]","|")
+  temp<-str_remove(temp,"^\\|")
+  temp<-str_remove(temp,"\\|$")
+  temp<-temp[temp!=""]
+  out<-paste(temp,collapse = "|")
+  return(out)
+}
+
+#38 list has no amenities
+dat2<-dat1%>%select(id, amenities)%>%
+  rowwise()%>%
+  mutate(amenity = split_amenities(amenities))
+dat3<-dat2%>%separate_rows(amenity,sep="\\|")
+
+##output amenities
+#write_csv(dat3%>%select(-amenities),"./data/amenities_201909.csv")
+```
+
+
 ### 5. Provide a short summary, including 2-3 graphs, of your initial investigations. 
 
 [10 points]
-```{r}
-df <- read_csv("airbnb_201909_cleaned.csv",na = c("", "NA", "N/A"))
-str(df)
+
+```{r initial amenities}
+##most commom amenities
+df_am<-read_csv("./data/amenities_201909.csv")
+
+ggplot(df_am%>%group_by(amenity)%>%count()%>%ungroup%>%arrange(-n)%>%head(20))+
+  geom_col(aes(x=fct_reorder(amenity,n),y=n))+
+  coord_flip()+
+  labs(title="Most Common 20 Amenities", y="Count",x="Amenities")
+
+##most equipted list
+ggplot(df_am%>%group_by(id)%>%count()%>%ungroup)+
+  geom_histogram(aes(x=n),binwidth = 2, boundary = 0, closed = "right",  fill="blue")+
+  labs(title="Histogram of Number of Amenities Provided by Each List", y="Count",x="Number of Amenities")
+
 ```
+
+The bar plot lists out the most commomly listed amenities. It is not surprise to see that Wifi is on the top of amenities. The histogram shows the distribution of number of amenities for each list. Some of the lists are very detailed about what they provide, thus the plot is right skewed. Most commonly, a list will highlight around 15 amenities they provide. It will be interesting to investigate the relationship of price and reviews with the number of amenities and the content of the amenities.
+
