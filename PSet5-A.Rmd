@@ -1,13 +1,20 @@
 ---
 title: "EDAV Fall 2019 PSet 5, part A"
-author: "null"
+author: Lin Jiang, Han Xu and Shuo Yang
 output:
   html_document:
     df_print: paged
 ---
 ```{r, include=FALSE}
-knitr::opts_chunk$set(warning = FALSE, message = FALSE, echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, echo = TRUE, fig.align='center')
 ```
+
+```{r load packages}
+library(tidyverse)
+library(ggplot2)
+library(parcoords)
+```
+
 
 This assignment is designed to help you get started on the final project. Be sure to review the final project instructions (https://edav.info/project.html), in particular the new section on reproducible workflow (https://edav.info/project.html#reproducible-workflow), which summarizes principles that we've discussed in class.
     
@@ -77,11 +84,6 @@ The data is not cleaned, so we need spend some time to tidy it.
 - Another obstacle is that some information is compressed into one cell, like amenities. Amenities compress all the amenities provided in to one lone string, and it is not seperated by simple delimiter. We have tried to transform amenities into a seperate tidy data frame. We will try to clean other similar columns.
 
 
-```{r load packages}
-library(tidyverse)
-library(ggplot2)
-```
-
 ```{r Data Importing and Cleaning}
 #Data Importing and Cleaning
 data<-read_csv("listings_201909.csv", na=c("","NA","N/A"))
@@ -150,9 +152,7 @@ dat3<-dat2%>%separate_rows(amenity,sep="\\|")
 
 **Bar Chart - Listings by Neighborhood**
 ```{r}
-library(tidyverse)
-library(ggplot2)
-data <- read_csv("/Users/amber/Downloads/Columbia Related/5702 HW/EDAV_final_project/data/airbnb_201909.csv")
+data <- read_csv("./data/airbnb_201909.csv")
 
 data_by_region <- data %>%
   group_by(neighbourhood_group_cleansed) %>%
@@ -166,14 +166,13 @@ ggplot(data_by_region, aes(x=fct_reorder(neighbourhood_group_cleansed,count), y=
        y = 'Listings',
        title = 'Listings by Neighborhood') +
   coord_flip()
- 
+
 ```
 
 The majority of the listings are in Brooklyn and Manhattan. 
 
 **Histogram - Listing Price Range**
 ```{r}
-library(ggplot2)
 ggplot(data, aes(x=price)) + 
   geom_histogram(bins = 15, 
                  col = "black",
@@ -187,8 +186,6 @@ We see that the majority of listings are between $100 to $250 per night.
 
 **Parallel Coordinates - Initial Investigation**
 ```{r}
-library(parcoords)
-
 data_parallel <- data %>%
   dplyr::select(price, host_response_rate, bed_type, review_scores_rating, number_of_reviews, neighbourhood_group_cleansed) %>%
   filter(data$first_review > 2019-01-01) %>%
@@ -218,13 +215,16 @@ For the next steps, we will need to divide up the actual prices/response rates/r
 df_am<-read_csv("./data/amenities_201909.csv")
 
 ggplot(df_am%>%group_by(amenity)%>%count()%>%ungroup%>%arrange(-n)%>%head(20))+
-  geom_col(aes(x=fct_reorder(amenity,n),y=n))+
+  geom_col(aes(x=fct_reorder(amenity,n),y=n), col = "black",
+           fill = 'lightblue')+
   coord_flip()+
   labs(title="Most Common 20 Amenities", y="Count",x="Amenities")
 
 ##most equipted list
 ggplot(df_am%>%group_by(id)%>%count()%>%ungroup)+
-  geom_histogram(aes(x=n),binwidth = 2, boundary = 0, closed = "right",  fill="blue")+
+  geom_histogram(aes(x=n),binwidth = 2, boundary = 0, closed = "right",
+                 col = "black",
+                 fill = 'lightblue')+
   labs(title="Histogram of Number of Amenities Provided by Each List", y="Count",x="Number of Amenities")
 
 ```
