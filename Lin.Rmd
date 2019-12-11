@@ -30,8 +30,52 @@ Note that the `echo = FALSE` parameter was added to the code chunk to prevent pr
 
 ```{r}
 library(tidyverse)
+libary(dplyr)
 library(ggplot2)
 data <- read_csv("/Users/amber/Downloads/Columbia Related/5702 HW/EDAV_final_project/data/airbnb_201909.csv")
+```
+```{r}
+## find NA patterns
+
+colSums(is.na(data)) %>%
+  sort(decreasing=TRUE)
+
+data_na <- data %>%
+  select(id, neighbourhood_cleansed, security_deposit, host_response_rate, host_response_time, cleaning_fee, review_scores_location, review_scores_value, review_scores_checkin, review_scores_accuracy, review_scores_communication, review_scores_cleanliness, price, bathrooms, bedrooms, beds, host_since, host_listings_count, host_has_profile_pic, host_identity_verified, neighbourhood)
+  
+  
+tidydata_na <- data_na %>%
+  gather(key,value,-id,-neighbourhood_cleansed) %>%
+  group_by(neighbourhood_cleansed) %>%
+  summarise(sumNA = sum(is.na(value)), count = n()) %>%
+  mutate(missing = ifelse(sumNA == 0, 'yes', 'no'))
+
+
+  summarize(count = n())
+  # group_by(neighbourhood_cleansed) %>%
+  # mutate(missing=ifelse(is.na()))
+
+```
+
+```{r}
+#clean NA
+
+completeFun <- function(data, desiredCols) {
+  completeVec <- complete.cases(data[, desiredCols])
+  return(data[completeVec, ])
+}
+
+airbnb_cleaned <- completeFun(data, c("review_scores_value", "review_scores_checkin", "review_scores_accuracy", "review_scores_communication", "review_scores_cleanliness","review_scores_rating","neighbourhood", "review_scores_location", "price", "bedrooms", "beds","bathrooms", "host_identity_verified","zipcode"))
+
+airbnb_cleaned$cleaning_fee[is.na(airbnb_cleaned$cleaning_fee)] <- 0
+dim(airbnb_cleaned)
+sort(colSums(is.na(airbnb_cleaned)),decreasing = TRUE)
+
+
+```
+
+```{r}
+
 
 data_by_region <- data %>%
   group_by(neighbourhood_group_cleansed) %>%
@@ -85,8 +129,10 @@ ggplot(data, aes(x=review_scores_rating)) +
 ```{r}
 library(parcoords)
 
+# bed_type
+
 data_parallel <- data %>%
-  dplyr::select(price, host_response_rate, bed_type, review_scores_rating, number_of_reviews, neighbourhood_group_cleansed) %>%
+  dplyr::select(price, host_response_rate, number_of_reviews, review_scores_rating, neighbourhood_group_cleansed) %>%
   filter(data$first_review > 2019-01-01) %>%
   filter(!is.na(price) & !is.na(host_response_rate) & !is.na(review_scores_rating)) 
 
@@ -121,3 +167,44 @@ parcoords(data_parallel,
           brushMode = "1d-axes")
 ```
 For initial investigation, we are interested in the relationship between price, host response rate, bed type, review score and number of ratings. After plotting the parallel coordinates for different neighborhoods, we see that Staten Island and Bronx share similar patterns, they have low price ranges, high host response rate, primarily real beds, high review scores and less reviews. Brooklyn and Queens share similar patterns, they have higher prices, varying host response rate and bed types, medium to high review scores and more reviews. For Manhattan, the patterns vary a lot. For example, we have prices ranging from super cheap to extermely expensive. And we also have all kinds of bed types like airbed and couch. This initial observation makes sense because we have the most data for Manhattan and depending on the actual location in Manhattan, the listings could differ a lot. For the next steps, we will need to divide up the actual prices/response rates/reviews scores into groups for better comparision to figure out the relationships between these factors. 
+
+```{r}
+
+# bed_type
+
+data_parallel <- data %>%
+  dplyr::select(price, host_response_rate, number_of_reviews, review_scores_rating, bed_type) %>%
+  filter(data$first_review > 2019-01-01) %>%
+  filter(!is.na(price) & !is.na(host_response_rate) & !is.na(review_scores_rating)) %>%
+  mutate(price = scales::rescale(price),
+         host_response_rate = scales::rescale(host_response_rate),
+         number_of_reviews = scales::rescale(number_of_reviews),
+         review_scores_rating = scales::rescale(review_scores_rating)
+  )
+  
+
+names(data_parallel)[names(data_parallel) == 'neighbourhood_group_cleansed'] <- 'neighbourhoodColor'
+parcoords(data_parallel, 
+          # color = list(
+          # colorBy = "bed_type"
+          # , colorScale = "scaleOrdinal"
+          # , colorScheme = "schemeCategory10"
+          # ),
+          withD3 = TRUE,
+          reorderable = TRUE,
+          alpha = 0.5, 
+          brushMode = "1d-axes")
+```
+
+
+```{r}
+
+dim(data)
+
+library(ggmap)
+
+28098
+
+data_map <- data %>% select(-listing_url, -)
+
+```
