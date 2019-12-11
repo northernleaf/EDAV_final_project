@@ -193,3 +193,133 @@ ggplot(df_am%>%group_by(id)%>%count()%>%ungroup)+
   labs(title="Histogram of Number of Amenities Provided by Each List", y="Count",x="Number of Amenities")
 
 ```
+
+
+
+
+
+# plots
+
+```{r data}
+data <- read_csv("./data/airbnb_201909.csv")
+dim(data)
+
+data%>%filter(last_review>='2018-09-01'&price>0&(!is.na(price)))%>%group_by(neighbourhood_group_cleansed)%>%summarise_all(function(x){sum(is.na(x))})%>%View()
+```
+
+```{r data cleaning}
+#clean NA
+completeFun <- function(data, desiredCols) {
+  completeVec <- complete.cases(data[, desiredCols])
+  return(data[completeVec, ])
+}
+
+data_cleaned <- completeFun(data, c("review_scores_value", "review_scores_checkin", "review_scores_accuracy", "review_scores_communication", "review_scores_cleanliness","review_scores_rating","neighbourhood", "review_scores_location", "price", "bedrooms", "beds","bathrooms", "host_identity_verified","zipcode"))
+
+data_cleaned$cleaning_fee[is.na(data_cleaned$cleaning_fee)] <- 0
+data_cleaned$security_deposit[is.na(data_cleaned$security_deposit)] <- 0
+dim(data_cleaned) #37130    62#
+#sort(colSums(is.na(data_cleaned)),decreasing = TRUE)
+
+data_cleaned<-data_cleaned%>%filter(last_review>='2018-09-01' & price>0)
+dim(data_cleaned) #28098
+
+write_csv(data_cleaned,"data_cleaned.csv")
+```
+
+```{r missing}
+library(extracat)
+
+visna(data_cleaned)
+##host_response_rate and host_response_time are missing together
+
+data_cleaned%>%select(starts_with("host"))
+unique(data_cleaned$host_response_time)
+##suppose NA as no response
+
+
+##13% service fee!!
+```
+
+
+```{r real price}
+dat<-data_cleaned
+dat<- dat%>%rowwise%>%
+  mutate(price_full_pax = price + max(0,(accommodates-guests_included))*extra_people)%>%
+  rowwise%>%
+  mutate(price_full_pax_avg = price_full_pax/accommodates)%>%
+  rowwise%>%
+  mutate(price_1pax_avg = price)%>%
+  rowwise%>%
+  mutate(price_2pax_avg = ifelse(accommodates<2,NA,price+max(0,(2-guests_included))*extra_people) / 2)%>%
+  rowwise%>%
+  mutate(price_3pax_avg = ifelse(accommodates<3,NA,price+max(0,(3-guests_included))*extra_people) / 3)%>%
+  rowwise%>%
+  mutate(price_4pax_avg = ifelse(accommodates<4,NA,price+max(0,(4-guests_included))*extra_people) / 4)
+
+ggplot(dat)+geom_histogram(aes(x=price_full_pax_avg))
+
+```
+## boxplot
+```{r boxplot}
+library(ggplot2)
+dat1<-dat%>%filter(last_review>"2019-01-01")%>%
+  dplyr::select(id,neighbourhood_group_cleansed,host_is_superhost,review_scores_rating,starts_with('price'))%>%
+  dplyr::select(-price_full_pax)%>%
+  gather(key="price_type",value="price_per_night",-id,-neighbourhood_group_cleansed,-host_is_superhost,-review_scores_rating)
+
+ggplot(dat1)+
+  geom_boxplot(aes(y=price_per_night, x=neighbourhood_group_cleansed,fill=host_is_superhost),varwidth =T)+
+  facet_wrap(.~price_type, scales="free_y")
+
+ggplot(dat1)+
+  geom_boxplot(aes(y=price_per_night, x=neighbourhood_group_cleansed,fill=review_scores_rating==100),varwidth =T)+
+  facet_wrap(.~price_type, scales="free_y")
+
+```
+
+
+
+## choreography map
+```{r choreography map}
+
+```
+
+## diverging stacked bar chart
+```{r diverging}
+
+dat2<-dat%>%
+  dplyr::select(id,neighbourhood_group_cleansed,host_is_superhost, review_scores_rating, host_response_time)%>%
+  mutate(review = cut(review_scores_rating, breaks=c(100,99.9,95,90,80,0),
+                      labels = c("ExtremeDisatisfied","Disatisfied","Neutral",
+                                 "Satisfied","FullySatisfied")))
+
+  mutate_at("host_response_time",fct_recode,levels=c("within an hour","within a few hours","within a day","a few days or more"))%>%
+  mutate_at("host_response_time", fct_explicit_na,"No Response")
+
+
+library(HH)
+HH::likert(neighbourhood_group_cleansed~.,
+           dat2%>%select(neighbourhood_group_cleansed,review)%>%group_by(neighbourhood_group_cleansed,review)%>%count()%>%ungroup%>%spread(key="review",value="n"),
+           positive.order=TRUE,
+           main="diverging",
+           reference.line.col="gray65",
+           as.percent=TRUE
+           )
+
+HH::likert(neighbourhood_group_cleansed~.,
+           dat2%>%select(neighbourhood_group_cleansed,host_response_time)%>%group_by(neighbourhood_group_cleansed,host_response_time)%>%count()%>%ungroup%>%spread(key="host_response_time",value="n")%>%select(1,6,2:5),
+           positive.order=TRUE,
+           main="diverging",
+           reference.line.col="gray65",
+           as.percent=TRUE
+           )
+
+HH::likert(neighbourhood_group_cleansed~.|host_is_superhost,
+           dat2%>%select(host_is_superhost,neighbourhood_group_cleansed,host_response_time)%>%group_by(host_is_superhost,neighbourhood_group_cleansed,host_response_time)%>%count()%>%ungroup%>%spread(key="host_response_time",value="n")%>%select(1:2,7,3:6),
+           positive.order=TRUE,
+           main="diverging",
+           reference.line.col="gray65",
+           as.percent=TRUE
+           )
+```
