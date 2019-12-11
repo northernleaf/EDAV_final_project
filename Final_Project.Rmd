@@ -1,0 +1,127 @@
+---
+title: "EDAV Fall 2019 Final Project"
+author: Lin Jiang, Han Xu and Shuo Yang
+output:
+  html_document:
+output: html_document
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, echo = TRUE, fig.align='center')
+```
+
+```{r load packages, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(parcoords)
+```
+
+## Get and Prepare Data
+
+Data source: http://insideairbnb.com/get-the-data.html
+The data source provides a dataset of information from airbnb. We plan to use the the most recent (Sep, 2019) dataset for New York. The dataset is csv file, so we could just download and read it in normally. 
+The data is not cleaned, so we need spend some time to tidy it. 
+
+- The first obstacle is that the data file is  relatively large. The csv. file downlowded is more than 180MB. So we just select the columns relavent to our analysis. We also exclude lists that without reviews, as we want to focus on
+- Another obstacle is that some information is compressed into one cell, like amenities. Amenities compress all the amenities provided in to one lone string, and it is not seperated by simple delimiter. We have tried to transform amenities into a seperate tidy data frame. We will try to clean other similar columns.
+
+
+- We define an active list as the onces received reviews within the past 12 months.
+- For the cleaning fee (`cleaning_fee`) and security deposit (`security_deposit`), it is intuitive to replace the missings by 0.
+- There are small amount of other variables are missing, we simply exclude the listings. It might be due to collection error of the original data.
+- Finally, there are 28098 listings on Sep. 2019 for our analysis.
+
+```{r Data Importing and Cleaning}
+#Data Importing and Cleaning
+data<-read_csv("listings_201909.csv", na=c("","NA","N/A"))
+
+##select columns
+dat<-data%>%
+  select(-c(scrape_id:xl_picture_url))%>%
+  select(-host_url, -host_name, -host_location, -host_about,
+         -host_acceptance_rate, -host_thumbnail_url, -host_picture_url, 
+         -host_neighbourhood)%>%
+  select(-street,-city,-state, -market, -smart_location, -country, 
+         -country_code)%>%
+  select(-jurisdiction_names, -license,-weekly_price,-monthly_price, 
+         -square_feet)%>%
+  select(-c(calendar_updated:calendar_last_scraped)) 
+#dim(dat)  #48377    62
+
+##modify data type
+dat<-dat%>%
+  mutate_at(c("host_response_rate","extra_people",
+              "price","security_deposit","cleaning_fee"),
+            str_remove_all,pattern="[%$]")%>%
+  mutate_at(c("host_response_rate","extra_people",
+              "price","security_deposit","cleaning_fee"),
+            as.numeric)
+
+##select lists which have reviews within the last 12 months
+data_cleaned<-dat%>%filter(!is.na(first_review))%>%
+  filter(last_review>='2018-09-01')
+#dim(dat1) #28105    62
+
+#clean NA
+##replace missing values
+data_cleaned$cleaning_fee[is.na(data_cleaned$cleaning_fee)] <- 0
+data_cleaned$security_deposit[is.na(data_cleaned$security_deposit)] <- 0
+data_cleaned<-data_cleaned%>%filter(price>0)
+
+##exclude missing values
+completeFun <- function(data, desiredCols) {
+  completeVec <- complete.cases(data[, desiredCols])
+  return(data[completeVec, ])
+}
+
+data_cleaned <- completeFun(data_cleaned, c("review_scores_value", "review_scores_checkin", "review_scores_accuracy", "review_scores_communication", "review_scores_cleanliness","review_scores_rating","neighbourhood", "review_scores_location", "price", "bedrooms", "beds","bathrooms", "host_identity_verified","zipcode"))
+
+#sort(colSums(is.na(data_cleaned)),decreasing = TRUE)
+
+dim(data_cleaned) #28098
+
+#cleaned data output
+##write_csv(data_cleaned,"data_cleaned.csv")
+```
+
+**amentities for backup**
+
+
+```{r amenities}
+#split amenities into tidy data frame
+##function to modify amenities string
+split_amenities<-function(x){
+  #x is an input string
+  x<-str_replace_all(x,"[{}]",",") #remove {}
+  temp<-str_split(x,"\\\"")[[1]] #split by \"
+  temp[str_starts(temp,"[,]") | str_ends(temp,"[,]")]<-str_replace_all(temp[str_starts(temp,"[,]") | str_ends(temp,"[,]")],"[,]","|")
+  temp<-str_remove(temp,"^\\|")
+  temp<-str_remove(temp,"\\|$")
+  temp<-temp[temp!=""]
+  out<-paste(temp,collapse = "|")
+  return(out)
+}
+
+#38 list has no amenities
+dat2<-dat1%>%select(id, amenities)%>%
+  rowwise()%>%
+  mutate(amenity = split_amenities(amenities))
+dat3<-dat2%>%separate_rows(amenity,sep="\\|")
+
+##output amenities
+#write_csv(dat3%>%select(-amenities),"./data/amenities_201909.csv")
+```
+
+## Analysis
+
+
+
+
+
+## Interactive
+
+
+
+
+
+
