@@ -30,9 +30,11 @@ Note that the `echo = FALSE` parameter was added to the code chunk to prevent pr
 
 ```{r}
 library(tidyverse)
-libary(dplyr)
+library(dplyr)
 library(ggplot2)
-data <- read_csv("/Users/amber/Downloads/Columbia Related/5702 HW/EDAV_final_project/data/airbnb_201909.csv")
+data <- read_csv("/Users/amber/Downloads/Columbia Related/5702 HW/EDAV_final_project/data/data_cleaned.csv")
+
+dim(data)
 ```
 ```{r}
 ## find NA patterns
@@ -129,31 +131,12 @@ ggplot(data, aes(x=review_scores_rating)) +
 ```{r}
 library(parcoords)
 
-# bed_type
-
 data_parallel <- data %>%
   dplyr::select(price, host_response_rate, number_of_reviews, review_scores_rating, neighbourhood_group_cleansed) %>%
   filter(data$first_review > 2019-01-01) %>%
   filter(!is.na(price) & !is.na(host_response_rate) & !is.na(review_scores_rating)) 
 
 names(data_parallel)[names(data_parallel) == 'neighbourhood_group_cleansed'] <- 'neighbourhoodColor'
-
-# data_parallel <- data_parallel %>%
-#   mutate(price_group = case_when(price <= 100 ~ '0-100',
-#                                   price <= 250 ~ '100-250',
-#                                   price <= 500 ~ '250-500',
-#                                   price <= 750 ~ '500-750',
-#                                   price <= 1000 ~ '750-1000',
-#                                   TRUE ~ '>1000')) %>%
-#   mutate(host_response_rate_group = case_when(host_response_rate <= 40 ~ 'Poor', 
-#                                   host_response_rate <= 80 ~ 'Acceptable',
-#                                   host_response_rate <= 90 ~ 'Decent',  
-#                                   TRUE ~ 'Excellent')) %>%
-#   mutate(review_scores_rating_group = case_when(review_scores_rating <= 50 ~ 'Poor',
-#                                   review_scores_rating <= 80 ~ 'Acceptable',
-#                                   review_scores_rating <= 90 ~ 'Great',
-#                                   TRUE ~ 'Excellent')) %>%
-#   select(-price, -host_response_rate, -review_scores_rating, -number_of_reviews)
 
 parcoords(data_parallel, 
           color = list(
@@ -198,13 +181,78 @@ parcoords(data_parallel,
 
 
 ```{r}
-
-dim(data)
-
+library(ggplot2)
 library(ggmap)
+library(maps)
+library(mapdata)
 
-28098
+usa <- map_data("usa")
 
-data_map <- data %>% select(-listing_url, -)
+states <- map_data("state")
+
+ny <- subset(states, region %in% c("new york"))
+counties <- map_data("county")
+ny_county <- subset(counties, region == "new york")
+
+
+ny_base <- ggplot(data = ny, mapping = aes(x = long, y = lat, group = group)) + 
+  coord_fixed(1.3) + 
+  geom_polygon(color = "black", fill = "gray")
+ny_base + theme_nothing()
+
+ny_base + theme_nothing() + 
+  geom_polygon(data = ny_county, fill = NA, color = "white") +
+  geom_polygon(color = "black", fill = NA)  # get the state border back on top
+
+
 
 ```
+
+
+```{r}
+## map for listings
+data_map_all <- data %>% select(id, longitude, latitude)
+sbbox <- make_bbox(lon = data_map_all$longitude, lat = data_map_all$latitude, f = .001)
+
+ny_map_all <- get_map(location = sbbox, maptype = "satellite", source = "google")
+ggmap(ny_map_all) + 
+  geom_point(data = data_map_all, mapping = aes(x = longitude, y = latitude), color = "red", size = 0.0011, alpha = 0.6)
+
+```
+```{r}
+## map for different room types
+data_map_room <- data %>% select(id, longitude, latitude, room_type)
+sbbox1 <- make_bbox(lon = data_map_room$longitude, lat = data_map_room$latitude, f = .001)
+
+ny_map_room <- get_map(location = sbbox1, maptype = "satellite", source = "google")
+ggmap(ny_map_room) + 
+  geom_point(data = data_map_room, mapping = aes(x = longitude, y = latitude, color = room_type), size = 1, alpha = 0.5)
+
+```
+```{r}
+## map for different property type
+data_map_property <- data %>% select(id, longitude, latitude, property_type)
+sbbox2 <- make_bbox(lon = data_map_property$longitude, lat = data_map_property$latitude, f = .001)
+
+ny_map_property <- get_map(location = sbbox2, maptype = "satellite", source = "google")
+ggmap(ny_map_property) + 
+  geom_point(data = data_map_property, mapping = aes(x = longitude, y = latitude, color = property_type), size = 1, alpha = 0.5)
+
+```
+```{r}
+## map for different price
+ny_price <- data %>% mutate(price_group = 
+         case_when(price <= 100 ~ '$100', 
+                   price <= 250 ~ '$100-$250',
+                   price <= 500 ~ '$250-$500',
+                   TRUE ~ '>$500')) 
+
+data_map_price <- ny_price %>% select(id, longitude, latitude, price_group)
+sbbox3 <- make_bbox(lon = data_map_price$longitude, lat = data_map_price$latitude, f = .001)
+
+ny_map_price <- get_map(location = sbbox1, maptype = "satellite", source = "google")
+ggmap(ny_map_price) + 
+  geom_point(data = data_map_price, mapping = aes(x = longitude, y = latitude, color = price_group), size = 1, alpha = 0.5)
+
+```
+
