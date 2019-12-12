@@ -110,7 +110,7 @@ dat3<-dat2%>%separate_rows(amenity,sep="\\|")
 
 # Analysis
 ```{r include = FALSE, message = FALSE, warning = FALSE}
-airbnb_cleaned <- read_csv("/Users/amber/Downloads/Columbia Related/5702 HW/EDAV_final_project/data/data_cleaned.csv")
+airbnb_cleaned <- read_csv("data_cleaned.csv")
 ```
 
 The majority of listings in our data are among Manhattan and Brooklyn. The closer to the new york city downtown area, the denser the listings. 
@@ -157,21 +157,24 @@ ggplot(data = airbnb_cleaned, aes(x = price)) +
 The first plot is a general plot of distribution of price, we could see that it is 
 skewed right with very long tail. Thus, we do a log 10 transformation so that we 
 could have better visualization. The distribution shows that the median of price 
-is 100. The boxplot in the following also shows that most of the listings have a price
-under 200 dollars. 
+is 100. 
+
+The boxplot in the following also shows that most of the listings have a price
+under 200 dollars. There are some listings have ridiculous high prices. 
+What are these listings? Why are they so expensive?
+Let's further explore these lisitngs with high prices. 
 
 
 ```{r echo=FALSE, message = FALSE, warning = FALSE}
 #boxplot of price
-ggplot() + geom_boxplot(data = airbnb_cleaned %>% filter(price< 500), aes(x = "price", y = price))+
-  ggtitle("Boxplot of Price (< 500)")
-  
-  
+ggplot() + geom_boxplot(data = airbnb_cleaned, aes(x = "price", y = price))+
+  ggtitle("Boxplot of Price") +
+  scale_y_continuous(breaks = c(0, 100, 200, 300,400,500,600,700,800,900,1000)) +
+  coord_flip()
+```
 ### What Makes Some Listings Most Expensive?
 
 
-There are some listings have ridiculous high prices. What are these listings? Why
-are they so expensive? Let's further explore these lisitngs with high prices. 
 
 ```{r echo = FALSE, fig.width= 10}
 high_price <- airbnb_cleaned %>%
@@ -241,7 +244,6 @@ be expensive.
 
 
 
-
 ### Does Location Make a Difference?
 Based on the price distribution above, we are interested in how prices are affected by different locations. We plotted the below push pin map which shows the price distribution among new york districts. 
 ```{r}
@@ -285,6 +287,7 @@ ggplot(avg_airbnb) +
 ```{r}
 #Price distribution of different neighborhood 
 ggplot(airbnb_cleaned, aes(x= price, color = neighbourhood_group_cleansed)) + geom_density() +
+   scale_x_log10() +
   ggtitle("Price distribution in different neighbourhoods")
 
 ```
@@ -314,9 +317,13 @@ ggplot(temp,aes(x = price, y = cleaning_fee, color = neighbourhood_group_cleanse
 ```
 
 
+
+
+
 ```{r}
 #Price distribution of different room type
 ggplot(airbnb_cleaned, aes(x= price, color = room_type)) + geom_density() +
+   scale_x_log10() +
   ggtitle("Price distribution of different room type")
 
 ```
@@ -346,42 +353,14 @@ ggmap(ny_map_room) +
 
 ```
 
-
-
-
+### What's the correlation between price and other variables
 
 ```{r}
-#Top average price 
-avg_airbnb <- airbnb_cleaned %>%
-  group_by(airbnb_cleaned$neighbourhood_cleansed) %>%
-  summarize(avg_price = mean(price)) %>%
-  arrange(desc(avg_price))
-colnames(avg_airbnb) <- c("neighbourhood","avg_price" )
+#pairwise scatterplot between price and room type, neighbourhood, number_of_reviews,
+#review_scores_rating, minimum_night, review_scores_location, 
 
-  
-ggplot(avg_airbnb[1:20,]) + 
-  geom_bar(aes(x = reorder(neighbourhood, avg_price), y = avg_price),stat="identity") +
-  coord_flip() + ggtitle("Top 20 average price ")
 
 ```
-
-
-
-
-```{r}
-#Top average price(different room type)
-neigh_list <- dplyr::pull(avg_airbnb[1:10,1])
-
-unique(airbnb_cleaned$room_type)
-temp <- airbnb_cleaned %>%
-  group_by(neighbourhood_cleansed, room_type) %>%
-  summarize(avg_price = mean(price)) 
-
-temp %>% filter(room_type == "Private room") %>% arrange(desc(avg_price))
-
-```
-
-
 
 
 ## Property type
@@ -402,13 +381,20 @@ ggplot(temp) +
 
 
 
-## Reviews
-
-
 ## Room type 
+
+## Reviews
+### What's the most important variables that affects customers' review
+correlation between review_scores_value and review_scores_accuracy, review_scores_cleanliness,review_scores_checkin,review_scores_communication,review_scores_location
+
+
 
 
 ## Host 
+### Does host verification affects review_scores_rating
+### Does host_has_profile_pic affects review_scores_rating
+### Dose host response rate affects review_scores_rating
+### Dose host response time affects review_scores_rating
 
 
 ## Interactive
