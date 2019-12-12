@@ -72,8 +72,8 @@ it is intuitive to replace the missings by 0. There are small amount of other va
 are missing, we simply exclude the listings. It might be also due to collection
 error of the original data.
 
-Finally, there are 28098 listings and 62 variables for our analysis.
-
+Finally, there are 28098 listings and 62 variables for our analysis. The variables 
+includes 
 
 
 
@@ -114,17 +114,16 @@ airbnb_cleaned <- read_csv("data_cleaned.csv")
 ## Price
 
 Booking price is always an important thing both customers and hosts cares about.
-In this section, we want to explore the facts of airbnb booking price in
+In this section, we want to explore the facts of airbnb booking price per night in
 the market of New York. For example, what kind of distribution does the varaible price has. Does 
 different areas has different distributions? What is the correlation between price
 and other varaibles? 
 
 
-
 ```{r echo=FALSE, message = FALSE, warning = FALSE}
 #Distribution of Price in total
 ggplot(data = airbnb_cleaned, aes(x = price)) +
-  geom_histogram(bins = 20, aes(y = ..density..), fill = "grey") + geom_density()
+  geom_histogram(bins = 20, aes(y = ..density..), fill = "grey") + geom_density()+
   ggtitle("Distribution of Price")
   
   
@@ -136,60 +135,109 @@ ggplot(data = airbnb_cleaned, aes(x = price)) +
 ggplot(data = airbnb_cleaned, aes(x = price)) +
   geom_histogram(bins = 20, aes(y = ..density..), fill = "lightblue") + geom_density()+
   scale_x_log10() +
-  ggtitle("Distribution of Price (transformed)") 
+  ggtitle("Distribution of Price (transformed)") +
+  geom_vline(xintercept = round(median(airbnb_cleaned$price), 2), size = 1, color = 'red') 
 ```
 
-This is a general plot of distribution of price, we could see that it is 
+The first plot is a general plot of distribution of price, we could see that it is 
 skewed right with very long tail. Thus, we do a log 10 transformation so that we 
-could have better visualization. The distribution shows that the median 
+could have better visualization. The distribution shows that the median of price 
+is 100. The boxplot in the following also shows that most of the listings have a price
+under 200 dollars. 
+
 
 ```{r echo=FALSE, message = FALSE, warning = FALSE}
 #boxplot of price
-ggplot() + geom_boxplot(data = airbnb_cleaned, aes(x = "price", y = price))+
-  ggtitle("Boxplot of Price")
-
-summary(airbnb_cleaned$price)
+ggplot() + geom_boxplot(data = airbnb_cleaned %>% filter(price< 500), aes(x = "price", y = price))+
+  ggtitle("Boxplot of Price (< 500)")
 ```
 
+There are some listings have ridiculous high prices. What are these listings? Why
+are they so expensive? Let's further explore these lisitngs with high prices. 
 
-```{r}
+```{r echo = FALSE, fig.width= 10}
 high_price <- airbnb_cleaned %>%
   filter(price > 600)
 
-high_price %>%
-  group_by(neighbourhood_group_cleansed) %>%
-  summarise(counts = n())
+require(gridExtra)
 
-high_price %>%
+
+
+plot1 <- high_price %>%
+  group_by(neighbourhood_group_cleansed) %>%
+  summarise(counts = n()) %>%
+  arrange(desc(counts))%>%
+  
+  
+  ggplot() + geom_bar(aes(x = reorder(neighbourhood_group_cleansed, counts), y = counts), 
+                      stat = 'identity') + xlab("neighbourhood") + ggtitle('Neighbourhood counts of listing with 600+ price')
+
+
+
+plot2 <- high_price %>%
   group_by(neighbourhood_cleansed) %>%
   summarise(counts = n())%>%
-  arrange(desc(counts))
+  arrange(desc(counts)) %>%
+  filter(counts > 8) %>%
+ ggplot() + geom_bar(aes(x = reorder(neighbourhood_cleansed, counts), y = counts), 
+                      stat = 'identity') + xlab("neighbourhood") + 
+  coord_flip() + ggtitle('Deatails of Neighbourhood')
+
+grid.arrange(plot1, plot2, ncol=2)
+```
+We foucus on the listings with price more than $600. We could see that most of the
+listings belongs to Manhattan area, which is reasonable. Futhermore, most of the listings 
+with high price are in Midtown, which is also not unexpected, because Midtown is 
+the central portion of Manhattan.
 
 
-high_price %>%
+
+```{r, echo = FALSE, fig.width= 10}
+plot1 <- high_price %>%
   group_by(room_type) %>%
   summarise(counts = n())%>%
-  arrange(desc(counts))
+  arrange(desc(counts)) %>%
+  ggplot() + geom_bar(aes(x = reorder(room_type, counts), y = counts), 
+                      stat = 'identity') + xlab("room_type") + 
+  coord_flip() + ggtitle('Room type ')
+  
 
-high_price %>%
+
+
+
+plot2 <- high_price %>%
   group_by(bedrooms) %>%
   summarise(counts = n()) %>%
-  arrange(desc(counts))
+  arrange(desc(counts)) %>% 
+    ggplot() + geom_bar(aes(x = reorder(bedrooms, counts), y = counts), 
+                      stat = 'identity') + xlab("room_type") + 
+  coord_flip() + ggtitle('Number of bedrooms ')
+
+grid.arrange(plot1, plot2, ncol=2)
 ```
 
+Moreover, we find the room type of most of these listings with high price is entire
+home/apt and the number of bedrooms are about 2-4. This result may explain the high
+price of these listings. Booking a big apratment in Midtown of Manhattan is reasonable to 
+be expensive. 
 
-```{r echo=FALSE}
-#Distribution of Price including ckeaning fees 
-airbnb_cleaned['total_price'] <- airbnb_cleaned$price + airbnb_cleaned$cleaning_fee
 
-
-ggplot(data = airbnb_cleaned, aes(x = total_price)) + geom_density()+
-  ggtitle("Distribution of Price including cleaning fees")
-```
+Cleaning fee 
 
 ```{r}
 ggplot(data = airbnb_cleaned, aes(x = cleaning_fee)) + geom_histogram(binwidth = 2)+
   ggtitle("Distribution of cleaning fees")
+```
+
+
+```{r echo=FALSE}
+# Scatter plot of price vs cleaning fee
+temp <- airbnb_cleaned[sample(nrow (airbnb_cleaned)), ] 
+ggplot(temp,aes(x = price, y = cleaning_fee, color = neighbourhood_group_cleansed)) + 
+  geom_point( alpha = 0.4) +
+  ggtitle("Price vs Cleaning fee") 
+
+
 ```
 
 
