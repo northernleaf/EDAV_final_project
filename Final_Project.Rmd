@@ -161,8 +161,6 @@ high_price <- airbnb_cleaned %>%
 
 require(gridExtra)
 
-
-
 plot1 <- high_price %>%
   group_by(neighbourhood_group_cleansed) %>%
   summarise(counts = n()) %>%
