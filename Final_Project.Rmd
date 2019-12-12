@@ -159,6 +159,7 @@ are they so expensive? Let's further explore these lisitngs with high prices.
 high_price <- airbnb_cleaned %>%
   filter(price > 600)
 
+
 require(gridExtra)
 
 plot1 <- high_price %>%
