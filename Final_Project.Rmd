@@ -158,21 +158,28 @@ ggplot(data = airbnb_cleaned, aes(x = price)) +
 The first plot is a general plot of distribution of price, we could see that it is 
 skewed right with very long tail. Thus, we do a log 10 transformation so that we 
 could have better visualization. The distribution shows that the median of price 
-is 100. The boxplot in the following also shows that most of the listings have a price
-under 200 dollars. 
+is 100. 
+
+The boxplot in the following also shows that most of the listings have a price
+under 200 dollars. There are some listings have ridiculous high prices. 
+What are these listings? Why are they so expensive?
+Let's further explore these lisitngs with high prices. 
 
 
 ```{r echo=FALSE, message = FALSE, warning = FALSE}
 #boxplot of price
-ggplot() + geom_boxplot(data = airbnb_cleaned %>% filter(price< 500), aes(x = "price", y = price))+
-  ggtitle("Boxplot of Price (< 500)")
-```  
-  
+
+ggplot() + geom_boxplot(data = airbnb_cleaned, aes(x = "price", y = price))+
+  ggtitle("Boxplot of Price") +
+  scale_y_continuous(breaks = c(0, 100, 200, 300,400,500,600,700,800,900,1000)) +
+  coord_flip()
+
+
+```
+
 ### What Makes Some Listings Most Expensive?
 
 
-There are some listings have ridiculous high prices. What are these listings? Why
-are they so expensive? Let's further explore these lisitngs with high prices. 
 
 ```{r echo = FALSE, fig.width= 10}
 high_price <- airbnb_cleaned %>%
@@ -217,19 +224,15 @@ plot1 <- high_price %>%
   arrange(desc(counts)) %>%
   ggplot() + geom_bar(aes(x = reorder(room_type, counts), y = counts), 
                       stat = 'identity') + xlab("room_type") + 
-  coord_flip() + ggtitle('Room type ')
-  
-
-
-
+  coord_flip() + ggtitle('Room type ') 
 
 plot2 <- high_price %>%
   group_by(bedrooms) %>%
   summarise(counts = n()) %>%
   arrange(desc(counts)) %>% 
     ggplot() + geom_bar(aes(x = reorder(bedrooms, counts), y = counts), 
-                      stat = 'identity') + xlab("room_type") + 
-  coord_flip() + ggtitle('Number of bedrooms ')
+                      stat = 'identity') + xlab('number of bedrooms') +
+  coord_flip() + ggtitle('Number of bedrooms ') 
 
 grid.arrange(plot1, plot2, ncol=2)
 ```
@@ -238,7 +241,6 @@ Moreover, we find the room type of most of these listings with high price is ent
 home/apt and the number of bedrooms are about 2-4. This result may explain the high
 price of these listings. Booking a big apratment in Midtown of Manhattan is reasonable to 
 be expensive. 
-
 
 
 
@@ -288,6 +290,7 @@ ggplot(avg_airbnb) +
 ```{r}
 #Price distribution of different neighborhood 
 ggplot(airbnb_cleaned, aes(x= price, color = neighbourhood_group_cleansed)) + geom_density() +
+   scale_x_log10() +
   ggtitle("Price distribution in different neighbourhoods")
 
 ```
@@ -314,9 +317,11 @@ ggplot(temp,aes(x = price, y = cleaning_fee, color = neighbourhood_group_cleanse
 
 ### Does Room Type and Property Type Affect Price?
 
+
 ```{r}
 #Price distribution of different room type
 ggplot(airbnb_cleaned, aes(x= price, color = room_type)) + geom_density() +
+   scale_x_log10() +
   ggtitle("Price distribution of different room type")
 
 ```
@@ -346,9 +351,30 @@ ggmap(ny_map_room) +
 
 ```
 
+
+### What's the correlation between price and other variables
+
+
+```{r}
+temp <- dplyr::summarise(group_by(airbnb_cleaned, property_type, neighbourhood_group_cleansed), freq = n())  %>% filter(freq > 100)
+
+df2 <- temp %>%
+group_by(neighbourhood_group_cleansed) %>%
+mutate(prop = freq/sum(freq)) %>%
+ungroup()
+
+ggplot(df2,
+aes(x = neighbourhood_group_cleansed, y = prop, fill = property_type)) +
+geom_bar(stat = "identity") + labs(x = "Neighborhood",
+y = "Proportion",
+title = "Neighborhood by Property Type") +
+theme(legend.title = element_blank()) + 
+  scale_fill_brewer(palette = "Dark2")
+
+```
 ```{r}
 ## map for different property type
-data_map_property <- data[sample(nrow(data)),] %>% select(id, longitude, latitude, property_type)
+data_map_property <- data[sample(nrow(data)),] %>% filter(property_type %in% c('Apartment', 'House', 'Townhouse', 'Condominium', 'Loft','Guest suite', 'Serviced apartment', 'Hotel')) %>% select(id, longitude, latitude, property_type)
 sbbox2 <- make_bbox(lon = data_map_property$longitude, lat = data_map_property$latitude, f = .001)
 
 ny_map_property <- get_map(location = sbbox2, maptype = "satellite", source = "google")
@@ -360,49 +386,20 @@ ggmap(ny_map_property) +
 
 
 
-
-
-```{r} 
-#Top average price(different room type)
-neigh_list <- dplyr::pull(avg_airbnb[1:10,1])
-
-unique(airbnb_cleaned$room_type)
-temp <- airbnb_cleaned %>%
-  group_by(neighbourhood_cleansed, room_type) %>%
-  summarize(avg_price = mean(price)) 
-
-temp %>% filter(room_type == "Private room") %>% arrange(desc(avg_price))
-
-```
-
-
-
-
-## Property type
-
-```{r}
-#Distribution of property type
-temp <- airbnb_cleaned %>%
-  group_by(property_type) %>%
-  summarise(counts = n())%>%
-  arrange(desc(counts)) %>%
-  filter(counts > 5)
-
-ggplot(temp) + 
-  geom_bar(aes(x = reorder(property_type, counts),y = counts), stat = 'identity') +  coord_flip() +
-             ggtitle("distribution of property type ")
-
-```
-
-
+## Room type 
 
 ## Reviews
+### What's the most important variables that affects customers' review
+correlation between review_scores_value and review_scores_accuracy, review_scores_cleanliness,review_scores_checkin,review_scores_communication,review_scores_location
 
 
-## Room type 
 
 
 ## Host 
+### Does host verification affects review_scores_rating
+### Does host_has_profile_pic affects review_scores_rating
+### Dose host response rate affects review_scores_rating
+### Dose host response time affects review_scores_rating
 
 
 ## Interactive
