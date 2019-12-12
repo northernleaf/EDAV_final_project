@@ -35,6 +35,7 @@ library(ggplot2)
 library(parcoords)
 library(ggplot2)
 library(ggmap)
+library(viridis)
 ```
 # Introdution
 
@@ -165,7 +166,7 @@ under 200 dollars.
 #boxplot of price
 ggplot() + geom_boxplot(data = airbnb_cleaned %>% filter(price< 500), aes(x = "price", y = price))+
   ggtitle("Boxplot of Price (< 500)")
-  
+```  
   
 ### What Makes Some Listings Most Expensive?
 
@@ -251,13 +252,15 @@ ny_price <- data %>% mutate(price_group =
                    price <= 250 ~ '$100-$250',
                    price <= 500 ~ '$250-$500',
                    TRUE ~ '>$500')) 
+ny_price$price_group <- factor(ny_price$price_group, levels = c('$100',  '$100-$250', '$250-$500', '>$500'))
 
 data_map_price <- ny_price %>% select(id, longitude, latitude, price_group)
 sbbox3 <- make_bbox(lon = data_map_price$longitude, lat = data_map_price$latitude, f = .001)
 
 ny_map_price <- get_map(location = sbbox3, maptype = "satellite", source = "google")
 ggmap(ny_map_price) + 
-  geom_point(data = data_map_price, mapping = aes(x = longitude, y = latitude, color = price_group), size = 1, alpha = 0.5)
+  geom_point(data = data_map_price, mapping = aes(x = longitude, y = latitude, color = price_group), size = 1, alpha = 0.5) +
+  scale_color_brewer(palette = "Dark2")
 
 
 ```
@@ -290,17 +293,13 @@ ggplot(airbnb_cleaned, aes(x= price, color = neighbourhood_group_cleansed)) + ge
 ```
 
 
-
-
-Cleaning fee 
+### Are Deposite and Clearning Fee Proportional to Price?
 
 ```{r}
 ggplot(data = airbnb_cleaned, aes(x = cleaning_fee)) + geom_histogram(binwidth = 2)+
   ggtitle("Distribution of cleaning fees")
 ```
 
-
-### Does Room Type and Property Type Affect Price?
 
 
 ```{r echo=FALSE}
@@ -310,9 +309,10 @@ ggplot(temp,aes(x = price, y = cleaning_fee, color = neighbourhood_group_cleanse
   geom_point( alpha = 0.4) +
   ggtitle("Price vs Cleaning fee") 
 
-
 ```
 
+
+### Does Room Type and Property Type Affect Price?
 
 ```{r}
 #Price distribution of different room type
@@ -326,7 +326,6 @@ avg_airbnb <- airbnb_cleaned %>%
   group_by(neighbourhood_group_cleansed, room_type) %>%
   summarize(avg_price = mean(price)) %>%
   arrange(neighbourhood_group_cleansed) 
- 
 
 ggplot(avg_airbnb, aes(x = reorder(neighbourhood_group_cleansed, avg_price), y = avg_price, fill = room_type)) + 
   geom_bar(stat="identity",position = "dodge") + ggtitle("Average price for different neighborhoods with room type")+
@@ -342,28 +341,23 @@ sbbox1 <- make_bbox(lon = data_map_room$longitude, lat = data_map_room$latitude,
 
 ny_map_room <- get_map(location = sbbox1, maptype = "satellite", source = "google")
 ggmap(ny_map_room) + 
-  geom_point(data = data_map_room, mapping = aes(x = longitude, y = latitude, color = room_type), size = 1, alpha = 0.5)
+  geom_point(data = data_map_room, mapping = aes(x = longitude, y = latitude, color = room_type), size = 1, alpha = 0.5) + 
+  scale_fill_brewer(palette = "Dark2")
 
 ```
-
-
-
-
 
 ```{r}
-#Top average price 
-avg_airbnb <- airbnb_cleaned %>%
-  group_by(airbnb_cleaned$neighbourhood_cleansed) %>%
-  summarize(avg_price = mean(price)) %>%
-  arrange(desc(avg_price))
-colnames(avg_airbnb) <- c("neighbourhood","avg_price" )
+## map for different property type
+data_map_property <- data[sample(nrow(data)),] %>% select(id, longitude, latitude, property_type)
+sbbox2 <- make_bbox(lon = data_map_property$longitude, lat = data_map_property$latitude, f = .001)
 
-  
-ggplot(avg_airbnb[1:20,]) + 
-  geom_bar(aes(x = reorder(neighbourhood, avg_price), y = avg_price),stat="identity") +
-  coord_flip() + ggtitle("Top 20 average price ")
+ny_map_property <- get_map(location = sbbox2, maptype = "satellite", source = "google")
+ggmap(ny_map_property) + 
+  geom_point(data = data_map_property, mapping = aes(x = longitude, y = latitude, color = property_type), size = 1, alpha = 0.5) + 
+  scale_fill_brewer(palette = "Dark2")
 
 ```
+
 
 
 
