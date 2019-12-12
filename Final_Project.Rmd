@@ -1,10 +1,29 @@
 ---
 title: "EDAV Fall 2019 Final Project"
 author: Lin Jiang, Han Xu and Shuo Yang
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
   html_document:
-output: html_document
+    toc: yes
+  pdf_document:
+    latex_engine: xelatex
+    number_sections: yes
+    toc: yes
+  word_document:
+    toc: yes
+  beamer_presentation:
+    fig_width: 6
+    toc: yes
+urlcolor: blue
 ---
+
+
+
+```{r,echo=FALSE,message=FALSE}
+options("digits" = 5)
+options("digits.secs" = 3)
+ 
+```
 
 ```{r, include=FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE, echo = TRUE, fig.align='center')
@@ -15,25 +34,190 @@ library(tidyverse)
 library(ggplot2)
 library(parcoords)
 ```
+# Introdution
 
-## Get and Prepare Data
+Airbnb, . 
 
-Data source: http://insideairbnb.com/get-the-data.html
-The data source provides a dataset of information from airbnb. We plan to use the the most recent (Sep, 2019) dataset for New York. The dataset is csv file, so we could just download and read it in normally. 
-The data is not cleaned, so we need spend some time to tidy it. 
+Airbnb not only has changed the possibilites of travel and ways of living, but also 
+brought new business potetials. We are interested in exploring the data generated from
+Airbnb, analyzing the data to find interesting facts about airbnb listing in New York.
+We hope we could generate some useful insights to provide guidances for
+customers and business suggestions for hosts. 
 
-- The first obstacle is that the data file is  relatively large. The csv. file downlowded is more than 180MB. So we just select the columns relavent to our analysis. We also exclude lists that without reviews, as we want to focus on
-- Another obstacle is that some information is compressed into one cell, like amenities. Amenities compress all the amenities provided in to one lone string, and it is not seperated by simple delimiter. We have tried to transform amenities into a seperate tidy data frame. We will try to clean other similar columns.
+
+# Get and Prepare Data
+
+Data source: http://insideairbnb.com/get-the-data.html.
+
+The data source provides a dataset of information from airbnb. We use the most 
+recent (Sep, 2019) dataset for New York. The data is not cleaned, so we need to 
+spend some time to tidy it. 
+
+The first obstacle is that the data file is relatively large. The csv. file 
+downlowded is more than 180MB. So we just select the columns relavent to our analysis.
+We also exclude lists that without reviews, as we want to focus on. 
+
+【Another obstacle is that some information is compressed into one cell, like amenities.
+Amenities compress all the amenities provided in to one lone string, and it is
+not seperated by simple delimiter. We have tried to transform amenities into a 
+seperate tidy data frame. We will try to clean other similar columns.】（不用的话可以删了）
 
 
-- We define an active list as the onces received reviews within the past 12 months.
-- For the cleaning fee (`cleaning_fee`) and security deposit (`security_deposit`), it is intuitive to replace the missings by 0.
-- There are small amount of other variables are missing, we simply exclude the listings. It might be due to collection error of the original data.
-- Finally, there are 28098 listings on Sep. 2019 for our analysis.
+Additionally, we define an active list as the onces received reviews within the past 12 months.
+Also we only includes data having price larger than zero, since we found that occurence of zero in price 
+may due to error in data colleting. 
 
-```{r Data Importing and Cleaning}
+For the cleaning fee (`cleaning_fee`) and security deposit (`security_deposit`), 
+it is intuitive to replace the missings by 0. There are small amount of other variables 
+are missing, we simply exclude the listings. It might be also due to collection
+error of the original data.
+
+Finally, there are 28098 listings and 62 variables for our analysis.
+
+
+
+
+**amentities for backup**
+
+
+```{r amenities, eval = FALSE}
+#split amenities into tidy data frame
+##function to modify amenities string
+split_amenities<-function(x){
+  #x is an input string
+  x<-str_replace_all(x,"[{}]",",") #remove {}
+  temp<-str_split(x,"\\\"")[[1]] #split by \"
+  temp[str_starts(temp,"[,]") | str_ends(temp,"[,]")]<-str_replace_all(temp[str_starts(temp,"[,]") | str_ends(temp,"[,]")],"[,]","|")
+  temp<-str_remove(temp,"^\\|")
+  temp<-str_remove(temp,"\\|$")
+  temp<-temp[temp!=""]
+  out<-paste(temp,collapse = "|")
+  return(out)
+}
+
+#38 list has no amenities
+dat2<-dat1%>%select(id, amenities)%>%
+  rowwise()%>%
+  mutate(amenity = split_amenities(amenities))
+dat3<-dat2%>%separate_rows(amenity,sep="\\|")
+
+##output amenities
+#write_csv(dat3%>%select(-amenities),"./data/amenities_201909.csv")
+```
+
+
+# Analysis
+```{r include = FALSE, message = FALSE, warning = FALSE}
+airbnb_cleaned <- read_csv("data_cleaned.csv")
+```
+
+## Price
+
+Booking price is always an important thing both customers and hosts cares about.
+In this section, we want to explore the facts of airbnb booking price in
+the market of New York. What kind of distribution does the varaible price has. Does 
+different areas has different distributions? What is the correlation between price
+and other varaibles? 
+
+
+
+```{r echo=FALSE}
+#Distribution of Price in total
+ggplot(data = airbnb_cleaned, aes(x = price)) +
+  geom_histogram(bins = 20, aes(y = ..density..), fill = "grey") + geom_density()
+  ggtitle("Distribution of Price")
+```
+```{r}
+#boxplot of price
+ggplot() + geom_boxplot(data = airbnb_cleaned, aes(x = "price", y = price))+
+  ggtitle("Boxplot of Price")
+
+summary(airbnb_cleaned$price)
+
+```
+
+This is a general plot of distribution of price, we could see that it is 
+skewed right with very long tail. For most of the price are arround 
+
+```{r}
+high_price <- airbnb_cleaned %>%
+  filter(price > 600)
+
+high_price %>%
+  group_by(neighbourhood_group_cleansed) %>%
+  summarise(counts = n())
+
+high_price %>%
+  group_by(neighbourhood_cleansed) %>%
+  summarise(counts = n())%>%
+  arrange(desc(counts))
+
+
+high_price %>%
+  group_by(room_type) %>%
+  summarise(counts = n())%>%
+  arrange(desc(counts))
+
+high_price %>%
+  group_by(bedrooms) %>%
+  summarise(counts = n()) %>%
+  arrange(desc(counts))
+```
+
+
+
+```{r echo=FALSE}
+#Distribution of Price including ckeaning fees 
+airbnb_cleaned['total_price'] <- airbnb_cleaned$price + airbnb_cleaned$cleaning_fee
+
+
+ggplot(data = airbnb_cleaned, aes(x = total_price)) + geom_density()+
+  ggtitle("Distribution of Price including cleaning fees")
+```
+
+```{r}
+ggplot(data = airbnb_cleaned, aes(x = cleaning_fee)) + geom_histogram(binwidth = 2)+
+  ggtitle("Distribution of cleaning fees")
+```
+
+
+```{r}
+#Price distribution of different room type
+ggplot(airbnb_cleaned, aes(x= price, color = room_type)) + geom_density() +
+  ggtitle("Price distribution of different room type")
+
+
+```
+
+
+```{r}
+#Price distribution of different neighborhood 
+ggplot(airbnb_cleaned, aes(x= price, color = neighbourhood_group_cleansed)) + geom_density() +
+  ggtitle("Price distribution in different neighbourhoods")
+
+```
+
+
+
+
+
+## Reviews
+
+## Room type 
+
+## Host 
+
+## Interactive
+
+
+
+
+
+# Appendix: code
+
+```{r Data Importing and Cleaning, eval = FALSE}
 #Data Importing and Cleaning
-data<-read_csv("listings_201909.csv", na=c("","NA","N/A"))
+data <- read_csv ("listings_201909.csv", na=c("","NA","N/A"))
 
 ##select columns
 dat<-data%>%
@@ -83,46 +267,4 @@ dim(data_cleaned) #28098
 #cleaned data output
 ##write_csv(data_cleaned,"data_cleaned.csv")
 ```
-
-**amentities for backup**
-
-
-```{r amenities}
-#split amenities into tidy data frame
-##function to modify amenities string
-split_amenities<-function(x){
-  #x is an input string
-  x<-str_replace_all(x,"[{}]",",") #remove {}
-  temp<-str_split(x,"\\\"")[[1]] #split by \"
-  temp[str_starts(temp,"[,]") | str_ends(temp,"[,]")]<-str_replace_all(temp[str_starts(temp,"[,]") | str_ends(temp,"[,]")],"[,]","|")
-  temp<-str_remove(temp,"^\\|")
-  temp<-str_remove(temp,"\\|$")
-  temp<-temp[temp!=""]
-  out<-paste(temp,collapse = "|")
-  return(out)
-}
-
-#38 list has no amenities
-dat2<-dat1%>%select(id, amenities)%>%
-  rowwise()%>%
-  mutate(amenity = split_amenities(amenities))
-dat3<-dat2%>%separate_rows(amenity,sep="\\|")
-
-##output amenities
-#write_csv(dat3%>%select(-amenities),"./data/amenities_201909.csv")
-```
-
-## Analysis
-
-
-
-
-
-
-## Interactive
-
-
-
-
-
 
