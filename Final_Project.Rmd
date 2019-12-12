@@ -33,6 +33,8 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE, echo = TRUE, fig.align='
 library(tidyverse)
 library(ggplot2)
 library(parcoords)
+library(ggplot2)
+library(ggmap)
 ```
 # Introdution
 
@@ -108,18 +110,28 @@ dat3<-dat2%>%separate_rows(amenity,sep="\\|")
 
 # Analysis
 ```{r include = FALSE, message = FALSE, warning = FALSE}
-airbnb_cleaned <- read_csv("data_cleaned.csv")
+airbnb_cleaned <- read_csv("/Users/amber/Downloads/Columbia Related/5702 HW/EDAV_final_project/data/data_cleaned.csv")
+```
+
+The majority of listings in our data are among Manhattan and Brooklyn. The closer to the new york city downtown area, the denser the listings. 
+```{r}
+## map for listings
+data = airbnb_cleaned
+data_map_all <- data %>% dplyr::select(id, longitude, latitude)
+sbbox <- make_bbox(lon = data_map_all$longitude, lat = data_map_all$latitude, f = .001)
+
+ny_map_all <- get_map(location = sbbox, maptype = "satellite", source = "google")
+ggmap(ny_map_all) + 
+  geom_point(data = data_map_all, mapping = aes(x = longitude, y = latitude), color = "red", size = 0.0011, alpha = 0.6)
+
 ```
 
 ## Price
 
-Booking price is always an important thing both customers and hosts cares about.
-In this section, we want to explore the facts of airbnb booking price in
-the market of New York. For example, what kind of distribution does the varaible price has. Does 
-different areas has different distributions? What is the correlation between price
-and other varaibles? 
+Booking price is always an important factor both customers and hosts care about.
+In this section, we want to explore the facts of airbnb booking price in the market of New York. 
 
-
+### How's Booking Price Distributed?
 
 ```{r echo=FALSE, message = FALSE, warning = FALSE}
 #Distribution of Price in total
@@ -137,13 +149,58 @@ ggplot(data = airbnb_cleaned, aes(x = price)) +
   geom_histogram(bins = 20, aes(y = ..density..), fill = "lightblue") + geom_density()+
   scale_x_log10() +
   ggtitle("Distribution of Price (transformed)") +
-  geom_vline(xintercept = round(median(airbnb$price), 2), size = 1, color = 'red') 
+  geom_vline(xintercept = round(median(airbnb_cleaned$price), 2), size = 1, color = 'red') 
 ```
 
-This is a general plot of distribution of price, we could see that it is 
-skewed right with very long tail. Thus, we do a log 10 transformation so that we 
-could have better visualization. The distribution shows that the median of price 
-is 100 
+This is a general plot of distribution of price, we could see that it is skewed right with very long tail. Thus, we do a log 10 transformation so that we 
+could have better visualization. The distribution shows that the median of price is 100 .
+
+
+### Does Location Make a Difference?
+Based on the price distribution above, we are interested in how prices are affected by different locations. We plotted the below push pin map which shows the price distribution among new york districts. 
+```{r}
+## map for different price
+ny_price <- data %>% mutate(price_group = 
+         case_when(price <= 100 ~ '$100', 
+                   price <= 250 ~ '$100-$250',
+                   price <= 500 ~ '$250-$500',
+                   TRUE ~ '>$500')) 
+
+data_map_price <- ny_price %>% select(id, longitude, latitude, price_group)
+sbbox3 <- make_bbox(lon = data_map_price$longitude, lat = data_map_price$latitude, f = .001)
+
+ny_map_price <- get_map(location = sbbox3, maptype = "satellite", source = "google")
+ggmap(ny_map_price) + 
+  geom_point(data = data_map_price, mapping = aes(x = longitude, y = latitude, color = price_group), size = 1, alpha = 0.5)
+
+```
+Most of the listings are among $100-$250 per night and the closer we are to new york downtown, the higher the price. The purple points indicate expensive listings above $250 per night. We can rarely see listings that cost more than $500 per night.
+
+Indeed, price is largely affected by location. To better illustrate, we plotted the average price per night for the five neighborhoods and we can see that Bronx, Staten Island, Queens are almost the same. Brooklyn and Manhattan are more expensice by about $50 to $100 per night, which is a large amount considering our majority of the prices are around $100 per night. 
+
+```{r}
+#average price for different area
+avg_airbnb <- airbnb_cleaned %>%
+  group_by(neighbourhood_group_cleansed) %>%
+  summarize(avg_price = mean(price)) %>%
+  arrange(desc(avg_price))
+colnames(avg_airbnb) <- c("neighbourhood","avg_price" )
+
+  
+ggplot(avg_airbnb) + 
+  geom_bar(aes(x = reorder(neighbourhood, avg_price), y = avg_price),stat="identity") +
+  xlab("Neighbourhood") +
+  ggtitle("Average price for different area ")
+
+```
+
+```{r}
+#Price distribution of different neighborhood 
+ggplot(airbnb_cleaned, aes(x= price, color = neighbourhood_group_cleansed)) + geom_density() +
+  ggtitle("Price distribution in different neighbourhoods")
+
+```
+### What Makes Some Listings Most Expensive?
 
 ```{r echo=FALSE, message = FALSE, warning = FALSE}
 #boxplot of price
@@ -178,65 +235,12 @@ high_price %>%
 ```
 
 
-```{r echo=FALSE}
-#Distribution of Price including ckeaning fees 
-airbnb_cleaned['total_price'] <- airbnb_cleaned$price + airbnb_cleaned$cleaning_fee
-
-df1 <- airbnb_cleaned$total_price
-df2<- airbnb_cleaned$price
-
-df_1 <- df1 %>%  mutate(Type = 'price with cleaning fees') %>%
-       bind_rows(df2 %>%
-           mutate(Type = 'price'))
-
-
-ggplot(df3,aes(y = Variable,x = dates,color = Type)) + 
-  geom_line() +
-  ggtitle("Merged datasets")
-
-
-
-ggplot() + geom_density(data = airbnb_cleaned, aes(x = total_price))+
-  geom_density(data = airbnb_cleaned, aes(x = price), color = 'blue') +
-    scale_x_log10() + legend() +
-  ggtitle("Distribution of Price including cleaning fees")
-```
-
-```{r}
-ggplot(data = airbnb_cleaned, aes(x = cleaning_fee)) + geom_histogram(binwidth = 2)+
-  ggtitle("Distribution of cleaning fees")
-```
-
+### Does Room Type and Property Type Affect Price?
 
 ```{r}
 #Price distribution of different room type
 ggplot(airbnb_cleaned, aes(x= price, color = room_type)) + geom_density() +
   ggtitle("Price distribution of different room type")
-
-```
-
-
-```{r}
-#Price distribution of different neighborhood 
-ggplot(airbnb_cleaned, aes(x= price, color = neighbourhood_group_cleansed)) + geom_density() +
-  ggtitle("Price distribution in different neighbourhoods")
-
-```
-
-
-```{r}
-#average price for different area
-avg_airbnb <- airbnb_cleaned %>%
-  group_by(neighbourhood_group_cleansed) %>%
-  summarize(avg_price = mean(price)) %>%
-  arrange(desc(avg_price))
-colnames(avg_airbnb) <- c("neighbourhood","avg_price" )
-
-  
-ggplot(avg_airbnb) + 
-  geom_bar(aes(x = reorder(neighbourhood, avg_price), y = avg_price),stat="identity") +
-  xlab("Neighbourhood") +
-  ggtitle("Average price for different area ")
 
 ```
 
@@ -252,6 +256,19 @@ ggplot(avg_airbnb, aes(x = reorder(neighbourhood_group_cleansed, avg_price), y =
   xlab("neighbourhood")
 
 ```
+
+Surprisingly, at such an expensive living area like Manhattan, lots of listings are "Entire Home/Apt". It's true that Manhattan has the most expensive listings but they actually also have relative good qualities (instead of being all shared rooms and small private rooms).
+```{r}
+## map for different room types
+data_map_room <- data[sample(nrow(data)),] %>% select(id, longitude, latitude, room_type)
+sbbox1 <- make_bbox(lon = data_map_room$longitude, lat = data_map_room$latitude, f = .001)
+
+ny_map_room <- get_map(location = sbbox1, maptype = "satellite", source = "google")
+ggmap(ny_map_room) + 
+  geom_point(data = data_map_room, mapping = aes(x = longitude, y = latitude, color = room_type), size = 1, alpha = 0.5)
+
+```
+
 
 
 
