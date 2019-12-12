@@ -171,6 +171,8 @@ ggplot() + geom_boxplot(data = airbnb_cleaned, aes(x = "price", y = price))+
   ggtitle("Boxplot of Price") +
   scale_y_continuous(breaks = c(0, 100, 200, 300,400,500,600,700,800,900,1000)) +
   coord_flip()
+
+
 ```
 ### What Makes Some Listings Most Expensive?
 
@@ -219,7 +221,8 @@ plot1 <- high_price %>%
   arrange(desc(counts)) %>%
   ggplot() + geom_bar(aes(x = reorder(room_type, counts), y = counts), 
                       stat = 'identity') + xlab("room_type") + 
-  coord_flip() + ggtitle('Room type ')
+  coord_flip() + ggtitle('Room type ') 
+
   
 
 
@@ -230,8 +233,9 @@ plot2 <- high_price %>%
   summarise(counts = n()) %>%
   arrange(desc(counts)) %>% 
     ggplot() + geom_bar(aes(x = reorder(bedrooms, counts), y = counts), 
-                      stat = 'identity') + xlab("room_type") + 
-  coord_flip() + ggtitle('Number of bedrooms ')
+                      stat = 'identity') + xlabel('number of bedrooms')
+  coord_flip() + ggtitle('Number of bedrooms ') 
+  
 
 grid.arrange(plot1, plot2, ncol=2)
 ```
