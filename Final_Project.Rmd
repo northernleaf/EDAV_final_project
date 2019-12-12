@@ -111,7 +111,7 @@ dat3<-dat2%>%separate_rows(amenity,sep="\\|")
 
 # Analysis
 ```{r include = FALSE, message = FALSE, warning = FALSE}
-airbnb_cleaned <- read_csv("/Users/amber/Downloads/Columbia Related/5702 HW/EDAV_final_project/data/data_cleaned.csv")
+airbnb_cleaned <- read_csv("data_cleaned.csv")
 ```
 
 The majority of listings in our data are among Manhattan and Brooklyn. The closer to the new york city downtown area, the denser the listings. 
@@ -226,6 +226,7 @@ plot1 <- high_price %>%
                       stat = 'identity') + xlab("room_type") + 
   coord_flip() + ggtitle('Room type ') 
 
+
 plot2 <- high_price %>%
   group_by(bedrooms) %>%
   summarise(counts = n()) %>%
@@ -233,6 +234,7 @@ plot2 <- high_price %>%
     ggplot() + geom_bar(aes(x = reorder(bedrooms, counts), y = counts), 
                       stat = 'identity') + xlab('number of bedrooms') +
   coord_flip() + ggtitle('Number of bedrooms ') 
+
 
 grid.arrange(plot1, plot2, ncol=2)
 ```
@@ -355,6 +357,7 @@ ggmap(ny_map_room) +
 ### What's the correlation between price and other variables
 
 
+
 ```{r}
 temp <- dplyr::summarise(group_by(airbnb_cleaned, property_type, neighbourhood_group_cleansed), freq = n())  %>% filter(freq > 100)
 
@@ -372,6 +375,7 @@ theme(legend.title = element_blank()) +
   scale_fill_brewer(palette = "Dark2")
 
 ```
+
 ```{r}
 ## map for different property type
 data_map_property <- data[sample(nrow(data)),] %>% filter(property_type %in% c('Apartment', 'House', 'Townhouse', 'Condominium', 'Loft','Guest suite', 'Serviced apartment', 'Hotel')) %>% select(id, longitude, latitude, property_type)
@@ -383,7 +387,6 @@ ggmap(ny_map_property) +
   scale_fill_brewer(palette = "Dark2")
 
 ```
-
 
 
 ## Room type 
