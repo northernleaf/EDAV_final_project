@@ -362,7 +362,7 @@ ggmap(ny_map_property) +
 
 
 
-```{r}
+```{r} 
 #Top average price(different room type)
 neigh_list <- dplyr::pull(avg_airbnb[1:10,1])
 
