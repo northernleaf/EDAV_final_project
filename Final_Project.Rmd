@@ -136,19 +136,19 @@ ggplot(data = airbnb_cleaned, aes(x = price)) +
 ggplot(data = airbnb_cleaned, aes(x = price)) +
   geom_histogram(bins = 20, aes(y = ..density..), fill = "lightblue") + geom_density()+
   scale_x_log10() +
-  ggtitle("Distribution of Price (transformed)") 
+  ggtitle("Distribution of Price (transformed)") +
+  geom_vline(xintercept = round(median(airbnb$price), 2), size = 1, color = 'red') 
 ```
 
 This is a general plot of distribution of price, we could see that it is 
 skewed right with very long tail. Thus, we do a log 10 transformation so that we 
-could have better visualization. The distribution shows that the median 
+could have better visualization. The distribution shows that the median of price 
+is 100 
 
 ```{r echo=FALSE, message = FALSE, warning = FALSE}
 #boxplot of price
 ggplot() + geom_boxplot(data = airbnb_cleaned, aes(x = "price", y = price))+
   ggtitle("Boxplot of Price")
-
-summary(airbnb_cleaned$price)
 ```
 
 
@@ -182,8 +182,23 @@ high_price %>%
 #Distribution of Price including ckeaning fees 
 airbnb_cleaned['total_price'] <- airbnb_cleaned$price + airbnb_cleaned$cleaning_fee
 
+df1 <- airbnb_cleaned$total_price
+df2<- airbnb_cleaned$price
 
-ggplot(data = airbnb_cleaned, aes(x = total_price)) + geom_density()+
+df_1 <- df1 %>%  mutate(Type = 'price with cleaning fees') %>%
+       bind_rows(df2 %>%
+           mutate(Type = 'price'))
+
+
+ggplot(df3,aes(y = Variable,x = dates,color = Type)) + 
+  geom_line() +
+  ggtitle("Merged datasets")
+
+
+
+ggplot() + geom_density(data = airbnb_cleaned, aes(x = total_price))+
+  geom_density(data = airbnb_cleaned, aes(x = price), color = 'blue') +
+    scale_x_log10() + legend() +
   ggtitle("Distribution of Price including cleaning fees")
 ```
 
