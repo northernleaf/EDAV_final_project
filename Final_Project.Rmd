@@ -115,29 +115,42 @@ airbnb_cleaned <- read_csv("data_cleaned.csv")
 
 Booking price is always an important thing both customers and hosts cares about.
 In this section, we want to explore the facts of airbnb booking price in
-the market of New York. What kind of distribution does the varaible price has. Does 
+the market of New York. For example, what kind of distribution does the varaible price has. Does 
 different areas has different distributions? What is the correlation between price
 and other varaibles? 
 
 
 
-```{r echo=FALSE}
+```{r echo=FALSE, message = FALSE, warning = FALSE}
 #Distribution of Price in total
 ggplot(data = airbnb_cleaned, aes(x = price)) +
   geom_histogram(bins = 20, aes(y = ..density..), fill = "grey") + geom_density()
   ggtitle("Distribution of Price")
+  
+  
 ```
-```{r}
+
+
+```{r echo=FALSE, message = FALSE, warning = FALSE}
+#Distribution of Price in total
+ggplot(data = airbnb_cleaned, aes(x = price)) +
+  geom_histogram(bins = 20, aes(y = ..density..), fill = "lightblue") + geom_density()+
+  scale_x_log10() +
+  ggtitle("Distribution of Price (transformed)") 
+```
+
+This is a general plot of distribution of price, we could see that it is 
+skewed right with very long tail. Thus, we do a log 10 transformation so that we 
+could have better visualization. The distribution shows that the median 
+
+```{r echo=FALSE, message = FALSE, warning = FALSE}
 #boxplot of price
 ggplot() + geom_boxplot(data = airbnb_cleaned, aes(x = "price", y = price))+
   ggtitle("Boxplot of Price")
 
 summary(airbnb_cleaned$price)
-
 ```
 
-This is a general plot of distribution of price, we could see that it is 
-skewed right with very long tail. For most of the price are arround 
 
 ```{r}
 high_price <- airbnb_cleaned %>%
@@ -165,7 +178,6 @@ high_price %>%
 ```
 
 
-
 ```{r echo=FALSE}
 #Distribution of Price including ckeaning fees 
 airbnb_cleaned['total_price'] <- airbnb_cleaned$price + airbnb_cleaned$cleaning_fee
@@ -186,7 +198,6 @@ ggplot(data = airbnb_cleaned, aes(x = cleaning_fee)) + geom_histogram(binwidth =
 ggplot(airbnb_cleaned, aes(x= price, color = room_type)) + geom_density() +
   ggtitle("Price distribution of different room type")
 
-
 ```
 
 
@@ -198,16 +209,101 @@ ggplot(airbnb_cleaned, aes(x= price, color = neighbourhood_group_cleansed)) + ge
 ```
 
 
+```{r}
+#average price for different area
+avg_airbnb <- airbnb_cleaned %>%
+  group_by(neighbourhood_group_cleansed) %>%
+  summarize(avg_price = mean(price)) %>%
+  arrange(desc(avg_price))
+colnames(avg_airbnb) <- c("neighbourhood","avg_price" )
+
+  
+ggplot(avg_airbnb) + 
+  geom_bar(aes(x = reorder(neighbourhood, avg_price), y = avg_price),stat="identity") +
+  xlab("Neighbourhood") +
+  ggtitle("Average price for different area ")
+
+```
+
+```{r}
+avg_airbnb <- airbnb_cleaned %>%
+  group_by(neighbourhood_group_cleansed, room_type) %>%
+  summarize(avg_price = mean(price)) %>%
+  arrange(neighbourhood_group_cleansed) 
+ 
+
+ggplot(avg_airbnb, aes(x = reorder(neighbourhood_group_cleansed, avg_price), y = avg_price, fill = room_type)) + 
+  geom_bar(stat="identity",position = "dodge") + ggtitle("Average price for different neighborhoods with room type")+
+  xlab("neighbourhood")
+
+```
+
+
+
+
+```{r}
+#Top average price 
+avg_airbnb <- airbnb_cleaned %>%
+  group_by(airbnb_cleaned$neighbourhood_cleansed) %>%
+  summarize(avg_price = mean(price)) %>%
+  arrange(desc(avg_price))
+colnames(avg_airbnb) <- c("neighbourhood","avg_price" )
+
+  
+ggplot(avg_airbnb[1:20,]) + 
+  geom_bar(aes(x = reorder(neighbourhood, avg_price), y = avg_price),stat="identity") +
+  coord_flip() + ggtitle("Top 20 average price ")
+
+```
+
+
+
+
+```{r}
+#Top average price(different room type)
+neigh_list <- dplyr::pull(avg_airbnb[1:10,1])
+
+unique(airbnb_cleaned$room_type)
+temp <- airbnb_cleaned %>%
+  group_by(neighbourhood_cleansed, room_type) %>%
+  summarize(avg_price = mean(price)) 
+
+temp %>% filter(room_type == "Private room") %>% arrange(desc(avg_price))
+
+```
+
+
+
+
+## Property type
+
+```{r}
+#Distribution of property type
+temp <- airbnb_cleaned %>%
+  group_by(property_type) %>%
+  summarise(counts = n())%>%
+  arrange(desc(counts)) %>%
+  filter(counts > 5)
+
+ggplot(temp) + 
+  geom_bar(aes(x = reorder(property_type, counts),y = counts), stat = 'identity') +  coord_flip() +
+             ggtitle("distribution of property type ")
+
+```
 
 
 
 ## Reviews
 
+
 ## Room type 
+
 
 ## Host 
 
+
 ## Interactive
+
 
 
 
