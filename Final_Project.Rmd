@@ -1,5 +1,6 @@
 ---
-title: "EDAV Fall 2019 Final Project"
+title: "Airbnb New York Listings Analysis"
+subtitle: "EDAV Fall 2019 Final Project"
 author: Lin Jiang, Han Xu and Shuo Yang
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
@@ -50,17 +51,14 @@ customers and business suggestions for hosts.
 
 # Get and Prepare Data
 
-Data source: http://insideairbnb.com/get-the-data.html.
 
+We get our data from [Inside Airbnb](http://insideairbnb.com/get-the-data.html). 
 The data source provides a dataset of information from airbnb. We use the most 
 recent (Sep, 2019) dataset for New York. The data is not cleaned, so we need to 
 spend some time to tidy it. 
 
-The first obstacle is that the data file is relatively large. The csv. file 
-downlowded is more than 180MB. So we just select the columns relavent to our analysis.
-We also exclude lists that without reviews, as we want to focus on. 
-
-Additionally, we define an active list as the onces received reviews within the past 12 months.
+The original dataset has 106 variables. We just select the variables relavent to our analysis.
+Additionally, the original dataset has 48377 listinsg. We define an active list as the onces received reviews within the past 12 months and only focus on these listings.
 Also we only includes data having price larger than zero, since we found that occurence of zero in price 
 may due to error in data colleting. 
 
@@ -71,7 +69,7 @@ error of the original data.
 
 Finally, there are 28098 listings and 62 variables for our analysis. We are interested in
 a few areas including Price, Reviews, Room Type, Host Response Rate, etc.
-Our analysis answered some interesting questions about Airbnb listings in New York. 
+Our analysis answered some interesting questions about Airbnb listings in New York.
 
 ```{r Data Importing and Cleaning, eval = FALSE, echo = FALSE}
 #Data Importing and Cleaning
@@ -489,9 +487,7 @@ As observed before, the majority are Apartments and Hotels. The closer to the ce
 ###  Are There any Correlation Between Price and Other Variables?
 
 
-There are other variables may be important factors that affects price, such as 
-
-number of reveiws, number of minimum night, host response rate, and review scores rating.
+There are other variables may be important factors that affects price, such as number of reveiws, number of minimum night, host response rate, and review scores rating.
 However, from the pairwise scatter plot, we could see that price actually does not 
 have strong correlation with these variables. 
 The price is set by hosts and not every host have multiple financial and marketing information.
@@ -507,31 +503,14 @@ ggpairs(pairPlot, mapping=ggplot2::aes(alpha = 0.5))
 
 ```
 
-There are other variables may be important factors that affects price, such as 
-number of reveiws, number of minimum night, host response rate, and review scores rating.
-However, from the pairwise scatter plot, we could see that price actually does not 
-have strong correlation with these variables. 
-The price is set by hosts and not every host have multiple financial and marketing information.
-Additionally, not all the host's purpose is making money, so price may not reflect actual market values.
-Price setting is individual subjective. 
-Therefore, we could see that a high price does not guarantee a good services. 
-
-
-```{r echo=FALSE, message = FALSE, warning = FALSE}
-#price vs number_of_reveiws, minimum_night, host_response_rate, review_scores_rating
-pairPlot <- airbnb_cleaned[,c("price", "number_of_reviews", "minimum_nights", "host_response_rate", "review_scores_rating") ]
-ggpairs(pairPlot)
-
-```
-
 
 ## Reviews
-
-### How to Better Understand Customer Reviews?
 
 Analyzing reviews can provide customers' opinions of valuaing the quality of airbnb
 services. Customers can rate an Airbnb stay in six categories: cleanliness, accuracy, 
 checking, communication, location, and value which we think represent an overall experience of the stay. 
+
+### How to Better Understand Customer Reviews?
 
 It is useful to explore which category affects the "value rating" the most because we see high "value" being that customers have the best experience during their stay. Knowing what
 customers' care can help hosts to understand what they can focus on improving to provide better service and attract more customers.  
@@ -561,7 +540,7 @@ ggplot(dat_review)+
 ```
 We can see that about 80% of the listings has full score in cleaning and checkin, meaning most of the customers are most satisfied with these two categories. It's worth noticing that the least customers tend to give full rating score to "Cleaning" category, meaning this might be one factor that hosts in New York need to pay more attention to. 
 
-```{r}
+```{r echo=FALSE, message = FALSE, warning = FALSE}
 
 
 ggplot(dat_review%>%filter(scores==10)%>%
@@ -593,9 +572,9 @@ and they should not give exaggerated descriptions to their listings.
 
 
 
-## Interactive
+## Interactive Map
 
-We implemented a Shiny app for [Interactive New York Airbnb Listings Map](https://ysyang.shinyapps.io/AirbnbMap/). The price shown on the Airbnb listings is just base price per night and the guests included varies from listing to listing. To be compariable, we calculated the price per person per night. This Shiny app is able to faciliate exploration of the listings from potential custerms' point of view, by filtering how many person to stay, the price range, room type and whether the host is a superhost. The box plot will provide a summary of the filtered listings by neighbourhood. By clicking on the map, there will a popup with some information about the picked listing and a link for further investigation. The users should be aware that there are additional charges of cleaning fee per stay for some listing. On top of all above, there is a **13%** service charge from Airbnb!
+We implemented a Shiny app for [Interactive New York Airbnb Listings Map](https://ysyang.shinyapps.io/AirbnbMap/). The price shown on the Airbnb listings is just base price per night and the guests included varies from listing to listing. To be compariable, we calculated the price per person per night. This Shiny app is able to faciliate exploration of the listings from potential custerms' point of view, by filtering how many person to stay, the price range, room type and whether the host is a superhost. The box plot will provide a summary of the filtered listings by neighbourhood. By clicking on the map, there will a popup with some information about the picked listing and a link for further investigation. The users should be aware that there are additional charges of cleaning fee per stay for some listings. On top of all above, there is a **13%** service charge from Airbnb!
 
 
 
@@ -753,12 +732,18 @@ shinyApp(ui, server)
 
 
 # Conclusion
-In this project, we analyzed the airbnb listings in New York on September, 2019. Our data shows 
-that most of the listings are among Manhattan and Brooklyn.
+In this project, we analyzed the airbnb listings in New York on September, 2019. Our data shows that most of the listings are among Manhattan and Brooklyn.
 We explored some interesting facts about the airbnb listings price. Most of the listings
-have price under $250. However, there are some listings have extremely high price (even $1000 per night). 
-Theses listings are entire home/apt with more than one bedrooms in Manhattan. 
-Locations is an important factor affect price. The closer the location of the listings are to new york downtown,
-the higher the price. The average price for Manhattan is almost as twice as other neighbourhoods. 
+have price under $250 with median $100. However, there are some listings have extremely high price (even $1000 per night). Theses listings are entire home/apt with more than one bedrooms in Manhattan. 
+
+We confirmed that locations is an important factor that affect price. The closer to new york downtown, the higher the price. The average price for Manhattan is almost as twice as other neighbourhoods. 
+
+For those listings with cleaing fee and security deposit, these fees are relatively high comparing to our listing price per night. We did not see any obvious correlation between price and cleaning fee or price and security deposit. 
+
+Price is also affected by room types and property types. "Entire Apartment" and "Hotel Room" are more expensive than "Private" and "Shared Room", especially in Manhatton. We also notice that lots of the listing in Manhatton are "Entire Home" instead of "Shared Rooms". A majority of the listings in Manhatton are "Apartment". We think there's a link between the fact that Manhatton tend to have lots of "Apartment" and "Entire Home" room types because these are small apartments and it's easier to rent the whole room. 
+
+Regarding customer reviews, we found that the value of the trip tends to be highly affected by "Cleaniness" of room and "Accurary" of the listings. 
+
+In the last interactive section, customers should be aware of the difference between the listing price on Airbnb and the actual price per person, which is a major feature in our map. 
 
 
