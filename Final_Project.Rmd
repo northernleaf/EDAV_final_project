@@ -18,16 +18,15 @@ output:
 urlcolor: blue
 ---
 
-```{r set up,echo=FALSE, message=FALSE}
+```{r set up, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, 
+                      echo = FALSE, 
+                      fig.align='center')
 options("digits" = 5)
 options("digits.secs" = 3)
 ```
 
-```{r set up, include=FALSE}
-knitr::opts_chunk$set(warning = FALSE, message = FALSE, echo = TRUE, fig.align='center')
-```
-
-```{r load packages, include=FALSE}
+```{r load packages}
 library(tidyverse)
 library(ggplot2)
 library(parcoords)
@@ -67,7 +66,7 @@ Finally, there are 28098 listings and 62 variables for our analysis. We are inte
 a few areas including Price, Reviews, Room Type, Host Response Rate, etc.
 Our analysis answered some interesting questions about Airbnb listings in New York.
 
-```{r Data Importing and Cleaning, eval = FALSE, echo = FALSE}
+```{r Data Importing and Cleaning, eval = FALSE}
 #Data Importing and Cleaning
 data <- read_csv ("listings_201909.csv", na=c("","NA","N/A"))
 
@@ -123,12 +122,12 @@ dim(data_cleaned) #28098
 
 
 # Analysis
-```{r load data, include = FALSE, message = FALSE, warning = FALSE}
+```{r load data}
 airbnb_cleaned <- read_csv("./data/data_cleaned.csv")
 ```
 
 The majority of listings in our data are among Manhattan and Brooklyn. The closer to the new york city downtown area, the denser the listings. 
-```{r map for listings, echo = FALSE}
+```{r map for listings}
 ## map for listings
 data = airbnb_cleaned
 data_map_all <- data %>% dplyr::select(id, longitude, latitude)
@@ -148,7 +147,7 @@ In this section, we want to explore the facts of airbnb booking price in the mar
 
 ### How's Booking Price Distributed?
 
-```{r price distribution 1, echo=FALSE, message = FALSE, warning = FALSE}
+```{r price distribution 1}
 #Distribution of Price in total
 ggplot(data = airbnb_cleaned, aes(x = price)) +
   geom_histogram(bins = 20, aes(y = ..density..), fill = "lightblue") + geom_density()+
@@ -158,7 +157,7 @@ ggplot(data = airbnb_cleaned, aes(x = price)) +
 ```
 
 
-```{r price distribution 2, echo=FALSE, message = FALSE, warning = FALSE}
+```{r price distribution 2}
 #Distribution of Price in total
 ggplot(data = airbnb_cleaned, aes(x = price)) +
   geom_histogram(bins = 20, aes(y = ..density..), fill = "lightblue") + geom_density()+
@@ -178,7 +177,7 @@ What are these listings? Why are they so expensive?
 Let's further explore these lisitngs with high prices. 
 
 
-```{r price box plot, echo=FALSE, message = FALSE, warning = FALSE}
+```{r price box plot}
 #boxplot of price
 
 ggplot() + geom_boxplot(data = airbnb_cleaned, aes(x = "price", y = price))+
@@ -192,7 +191,7 @@ ggplot() + geom_boxplot(data = airbnb_cleaned, aes(x = "price", y = price))+
 ### What Makes Some Listings Most Expensive?
 
 
-```{r high price 1, echo = FALSE, fig.width= 10}
+```{r high price 1, fig.width= 10}
 high_price <- airbnb_cleaned %>%
   filter(price > 600)
 
@@ -227,7 +226,7 @@ with high price are in Midtown, which is also not unexpected, because Midtown is
 the central portion of Manhattan.
 
 
-```{r high price 2, echo = FALSE, fig.width= 10}
+```{r high price 2, fig.width= 10}
 plot1 <- high_price %>%
   group_by(room_type) %>%
   summarise(counts = n())%>%
@@ -259,7 +258,7 @@ be expensive.
 
 ### Does Location Make a Difference?
 Based on the price distribution above, we are interested in how prices are affected by different locations. We plotted the below push pin map which shows the price distribution among new york districts. 
-```{r location 1, echo = FALSE}
+```{r location 1}
 ## map for different price
 ny_price <- data %>% mutate(price_group = 
          case_when(price <= 100 ~ '$100', 
@@ -284,7 +283,7 @@ Most of the listings are among $100-$250 per night and the closer we are to new 
 Indeed, price is largely affected by location. To better illustrate, we plotted the average price per night for the five neighborhoods.
 
 
-```{r location 2, echo = FALSE}
+```{r location 2}
 #average price for different area
 avg_airbnb <- airbnb_cleaned %>%
   group_by(neighbourhood_group_cleansed) %>%
@@ -302,7 +301,7 @@ ggplot(avg_airbnb) +
 
 We can see that Bronx, Staten Island, Queens are almost the same. Brooklyn and Manhattan are more expensice by about $50 to $100 per night, which is a large amount considering our majority of the prices are around $100 per night. 
 
-```{r location 3, echo = FALSE}
+```{r location 3}
 #Price distribution of different neighborhood 
 ggplot(airbnb_cleaned, aes(x= price, color = neighbourhood_group_cleansed)) + geom_density() +
    scale_x_log10() +
@@ -318,9 +317,7 @@ The price distribution for different neighborhoods share the same shape. They ha
 When we are browing through different listings, the price that Airbnb site displays does not include the deposite needed or the cleaning fee. We are interested in whether the deposit and cleaning fee are proportional to the listing price because intuitively we think they are. 
 
 
-```{r deposite and cleaning 1, echo = FALSE}
-
-
+```{r deposite and cleaning 1}
 plot1 <- ggplot(data = airbnb_cleaned, aes(x = cleaning_fee)) + 
   geom_histogram(aes(y=..density..),binwidth = 20, color = 'white', fill = '#3CA9FC')+
   geom_density() +
@@ -340,7 +337,7 @@ There is only a few of listings with 0 cleaning fees and almost all of them are 
 
 We use scatter plots to explore the relationship between price and cleaning fee and security deposit. 
 
-```{r deposite and cleaning 2, echo=FALSE}
+```{r deposite and cleaning 2}
 # Scatter plot of price vs cleaning fee
 temp <- airbnb_cleaned[sample(nrow (airbnb_cleaned)), ] 
 
@@ -367,7 +364,7 @@ There are four room types in Airbnb market: entire home/apt, private room,
 shared room, and hotel room.
 
 
-```{r room type 1, echo = FALSE}
+```{r room type 1}
 #Price distribution of different room type
 ggplot(airbnb_cleaned, aes(x= price, color = room_type)) + geom_density() +
    scale_x_log10() +
@@ -381,7 +378,7 @@ and shared room, which is reasonable. Additionally, shared room has realtive low
 for different room type in four neighbourhoods.
 
 
-```{r room type 2, echo = FALSE}
+```{r room type 2}
 avg_airbnb <- airbnb_cleaned %>%
   group_by(neighbourhood_group_cleansed, room_type) %>%
   summarize(avg_price = mean(price)) %>%
@@ -402,7 +399,7 @@ For shared room, Brooklyn and Bronx has the lowest average price.
 For entire home/apt and private room, Staten Island has the lowest average price. 
 
 
-```{r room type 3, echo=FALSE, message = FALSE, warning = FALSE}
+```{r room type 3}
 ## map for different room types
 data_map_room <- data[sample(nrow(data)),] %>% select(id, longitude, latitude, room_type)
 sbbox1 <- make_bbox(lon = data_map_room$longitude, lat = data_map_room$latitude, f = .001)
@@ -428,7 +425,7 @@ shared rooms and small private rooms).
 We use a stacked bar chart to show the proportion of different property type of listings across five neiborhoods. 
 
 
-```{r property type 1, echo = FALSE, message = FALSE, warning = FALSE}
+```{r property type 1}
 temp <- dplyr::summarise(group_by(airbnb_cleaned, property_type, neighbourhood_group_cleansed), freq = n())  %>% filter(freq > 70)
 
 df2 <- temp %>%
@@ -448,8 +445,7 @@ theme(legend.title = element_blank()) +
 
 Most of the listings are Apartments, followed by House. Manhattan has the most aprtments and Staten Island has the most House. Interestingly, Manhatton barely has any Houses, which makes sense because Manhattan has super high population density and has a lot more Apartments in order to hold more people. We can also observe that Manhatton, Brooklyn and Queens listings have a bigger variety in property types, including Loft and even Townhouse. 
 
-```{r property type 2, echo = FALSE}
-
+```{r property type 2}
 ## map for different property type
 data_map_property <- data[sample(nrow(data)),] %>% filter(property_type %in% c('Apartment', 'House', 'Townhouse', 'Condominium', 'Loft','Guest suite', 'Serviced apartment', 'Hotel')) %>% select(id, longitude, latitude, property_type)
 sbbox2 <- make_bbox(lon = data_map_property$longitude, lat = data_map_property$latitude, f = .001)
@@ -477,7 +473,7 @@ Price setting is individual subjective.
 Therefore, we could see that a high price does not guarantee a good services. 
 
 
-```{r others, echo=FALSE, message = FALSE, warning = FALSE}
+```{r others}
 #price vs number_of_reveiws, minimum_night, host_response_rate, review_scores_rating
 pairPlot <- airbnb_cleaned[,c("price", "number_of_reviews", "minimum_nights", "host_response_rate", "review_scores_rating") ]
 ggpairs(pairPlot, mapping=ggplot2::aes(alpha = 0.5))
@@ -498,7 +494,7 @@ customers' care can help hosts to understand what they can focus on improving to
 
 
 We plotted this bar chart to represent the full score percentage in each of the scoring categories. 
-```{r reviews 1, echo = FALSE,  message = FALSE, warning = FALSE}
+```{r reviews 1}
 dat_review<- airbnb_cleaned%>%
   dplyr::select(starts_with("review"))%>%
   dplyr::select(2:7)
@@ -521,7 +517,7 @@ ggplot(dat_review)+
 ```
 We can see that about 80% of the listings has full score in cleaning and checkin, meaning most of the customers are most satisfied with these two categories. It's worth noticing that the least customers tend to give full rating score to "Cleaning" category, meaning this might be one factor that hosts in New York need to pay more attention to. 
 
-```{r reviews 2, echo=FALSE, message = FALSE, warning = FALSE}
+```{r reviews 2}
 ggplot(dat_review%>%filter(scores==10)%>%
          group_by(others,value==10)%>%
          dplyr::summarise(n=sum(value))%>%
@@ -556,7 +552,7 @@ and they should not give exaggerated descriptions to their listings.
 We implemented a Shiny app for [Interactive New York Airbnb Listings Map](https://ysyang.shinyapps.io/AirbnbMap/). The price shown on the Airbnb listings is just base price per night and the guests included varies from listing to listing. To be compariable, we calculated the price per person per night. This Shiny app is able to faciliate exploration of the listings from potential custerms' point of view, by filtering how many person to stay, the price range, room type and whether the host is a superhost. The box plot will provide a summary of the filtered listings by neighbourhood. By clicking on the map, there will a popup with some information about the picked listing and a link for further investigation. The users should be aware that there are additional charges of cleaning fee per stay for some listings. On top of all above, there is a **13%** service charge from Airbnb!
 
 
-```{r shiny,eval=FALSE, include=FALSE}
+```{r shiny,eval=FALSE}
 ###shiny app.R file
 #load libraries
 library(shiny)
