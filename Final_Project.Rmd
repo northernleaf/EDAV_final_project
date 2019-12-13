@@ -485,7 +485,7 @@ customers' care can help hosts to understand what they can focus on improving to
 
 
 We plotted this bar chart to represent the full score percentage in each of the scoring categories. 
-```{r echo = FALSE,  message = FALSE, warning = FALSE, fig.width= 15}
+```{r echo = FALSE,  message = FALSE, warning = FALSE}
 dat_review<- airbnb_cleaned%>%
   dplyr::select(starts_with("review"))%>%
   dplyr::select(2:7)
@@ -503,10 +503,7 @@ ggplot(dat_review)+
   labs(y="",x="",
        title="Full Review Score% by Scoring Category",
        alpha="Score of 10",
-       fill="Review Score")+
-  theme(axis.text.x =element_text(size=19),
-         axis.text.y=element_text(size=15),
-        axis.title=element_text(size=14,face="bold"))
+       fill="Review Score")
 
 ```
 We can see that about 80% of the listings has full score in cleaning and checkin, meaning most of the customers are most satisfied with these two categories. It's worth noticing that the least customers tend to give full rating score to "Cleaning" category, meaning this might be one factor that hosts in New York need to pay more attention to. 
@@ -531,13 +528,10 @@ ggplot(dat_review%>%filter(scores==10)%>%
   labs(y="",x="",
        title="Full \"Value\" Review Score% Given Full Score in Each Scoring Category",
        alpha="Score of 10\nin Value",
-       fill="Review Score") +
-  theme(axis.text.x=element_text(size=19),
-        axis.text.y=element_text(size=15),
-        axis.title=element_text(size=14,face="bold"))
+       fill="Review Score") 
 ```
 
-Notice that this is the percentage of full "value" score given full score in each of these scoring categories. Therefore, the higher means customers are satisfied with this category along with "value" category, which implies they have better overall experience during their stay. 
+Note that this is the percentage of full "value" score given full score in each of these scoring categories. Therefore, the higher means customers are satisfied with this category along with "value" category, which implies they have better overall experience during their stay. 
 
 In addition to this, accurary tend to affect how customer evaluate the "value" of their trip. Combining these two, we can say that "Cleaning" and "Accuracy" tend to have higher impact on customer's overall experience of their trip. 
 
