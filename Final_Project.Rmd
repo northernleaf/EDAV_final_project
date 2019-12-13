@@ -41,8 +41,6 @@ library(GGally)
 ```
 # Introdution
 
-Airbnb, . 
-
 Airbnb not only has changed the possibilites of travel and ways of living, but also 
 brought new business potetials. We are interested in exploring the data generated from
 Airbnb, analyzing the data to find interesting facts about airbnb listing in New York.
@@ -62,12 +60,6 @@ The first obstacle is that the data file is relatively large. The csv. file
 downlowded is more than 180MB. So we just select the columns relavent to our analysis.
 We also exclude lists that without reviews, as we want to focus on. 
 
-【Another obstacle is that some information is compressed into one cell, like amenities.
-Amenities compress all the amenities provided in to one lone string, and it is
-not seperated by simple delimiter. We have tried to transform amenities into a 
-seperate tidy data frame. We will try to clean other similar columns.】（不用的话可以删了）
-
-
 Additionally, we define an active list as the onces received reviews within the past 12 months.
 Also we only includes data having price larger than zero, since we found that occurence of zero in price 
 may due to error in data colleting. 
@@ -79,37 +71,61 @@ error of the original data.
 
 Finally, there are 28098 listings and 62 variables for our analysis. We are interested in
 a few areas including Price, Reviews, Room Type, Host Response Rate, etc.
-Our analysis answered some interesting questions about Airbnb listings. 
+Our analysis answered some interesting questions about Airbnb listings in New York. 
 
+```{r Data Importing and Cleaning, eval = FALSE, echo = FALSE}
+#Data Importing and Cleaning
+data <- read_csv ("listings_201909.csv", na=c("","NA","N/A"))
 
+##select columns
+dat<-data%>%
+  select(-c(scrape_id:xl_picture_url))%>%
+  select(-host_url, -host_name, -host_location, -host_about,
+         -host_acceptance_rate, -host_thumbnail_url, -host_picture_url, 
+         -host_neighbourhood)%>%
+  select(-street,-city,-state, -market, -smart_location, -country, 
+         -country_code)%>%
+  select(-jurisdiction_names, -license,-weekly_price,-monthly_price, 
+         -square_feet)%>%
+  select(-c(calendar_updated:calendar_last_scraped)) 
+#dim(dat)  #48377    62
 
-**amentities for backup**
+##modify data type
+dat<-dat%>%
+  mutate_at(c("host_response_rate","extra_people",
+              "price","security_deposit","cleaning_fee"),
+            str_remove_all,pattern="[%$]")%>%
+  mutate_at(c("host_response_rate","extra_people",
+              "price","security_deposit","cleaning_fee"),
+            as.numeric)
 
+##select lists which have reviews within the last 12 months
+data_cleaned<-dat%>%filter(!is.na(first_review))%>%
+  filter(last_review>='2018-09-01')
+#dim(dat1) #28105    62
 
-```{r amenities, eval = FALSE}
-#split amenities into tidy data frame
-##function to modify amenities string
-split_amenities<-function(x){
-  #x is an input string
-  x<-str_replace_all(x,"[{}]",",") #remove {}
-  temp<-str_split(x,"\\\"")[[1]] #split by \"
-  temp[str_starts(temp,"[,]") | str_ends(temp,"[,]")]<-str_replace_all(temp[str_starts(temp,"[,]") | str_ends(temp,"[,]")],"[,]","|")
-  temp<-str_remove(temp,"^\\|")
-  temp<-str_remove(temp,"\\|$")
-  temp<-temp[temp!=""]
-  out<-paste(temp,collapse = "|")
-  return(out)
+#clean NA
+##replace missing values
+data_cleaned$cleaning_fee[is.na(data_cleaned$cleaning_fee)] <- 0
+data_cleaned$security_deposit[is.na(data_cleaned$security_deposit)] <- 0
+data_cleaned<-data_cleaned%>%filter(price>0)
+
+##exclude missing values
+completeFun <- function(data, desiredCols) {
+  completeVec <- complete.cases(data[, desiredCols])
+  return(data[completeVec, ])
 }
 
-#38 list has no amenities
-dat2<-dat1%>%select(id, amenities)%>%
-  rowwise()%>%
-  mutate(amenity = split_amenities(amenities))
-dat3<-dat2%>%separate_rows(amenity,sep="\\|")
+data_cleaned <- completeFun(data_cleaned, c("review_scores_value", "review_scores_checkin", "review_scores_accuracy", "review_scores_communication", "review_scores_cleanliness","review_scores_rating","neighbourhood", "review_scores_location", "price", "bedrooms", "beds","bathrooms", "host_identity_verified","zipcode"))
 
-##output amenities
-#write_csv(dat3%>%select(-amenities),"./data/amenities_201909.csv")
+#sort(colSums(is.na(data_cleaned)),decreasing = TRUE)
+
+dim(data_cleaned) #28098
+
+#cleaned data output
+##write_csv(data_cleaned,"data_cleaned.csv")
 ```
+
 
 
 # Analysis
@@ -129,7 +145,6 @@ ggmap(ny_map_all) +
   geom_point(data = data_map_all, mapping = aes(x = longitude, y = latitude), color = "red", size = 0.0011, alpha = 0.6)
 
 ```
-
 
 
 ## Price
@@ -183,7 +198,6 @@ ggplot() + geom_boxplot(data = airbnb_cleaned, aes(x = "price", y = price))+
 ### What Makes Some Listings Most Expensive?
 
 
-
 ```{r echo = FALSE, fig.width= 10}
 high_price <- airbnb_cleaned %>%
   filter(price > 600)
@@ -198,7 +212,7 @@ plot1 <- high_price %>%
   
   
   ggplot() + geom_bar(aes(x = reorder(neighbourhood_group_cleansed, counts), y = counts), 
-                      stat = 'identity', fill = '#3CA9FC') + xlab("neighbourhood") + ggtitle('Neighbourhood counts of listing with 600+ price')
+                      stat = 'identity', fill = '#3CA9FC', color = 'white') + xlab("neighbourhood") + ggtitle('Neighbourhood counts of listing with 600+ price')
 
 
 
@@ -208,7 +222,7 @@ plot2 <- high_price %>%
   arrange(desc(counts)) %>%
   filter(counts > 8) %>%
  ggplot() + geom_bar(aes(x = reorder(neighbourhood_cleansed, counts), y = counts), 
-                      stat = 'identity', fill = '#3CA9FC') + xlab("neighbourhood") + 
+                      stat = 'identity', fill = '#3CA9FC',color = 'white') + xlab("neighbourhood") + 
   coord_flip() + ggtitle('Deatails of Neighbourhood')
 
 grid.arrange(plot1, plot2, ncol=2)
@@ -226,7 +240,7 @@ plot1 <- high_price %>%
   summarise(counts = n())%>%
   arrange(desc(counts)) %>%
   ggplot() + geom_bar(aes(x = reorder(room_type, counts), y = counts), 
-                      stat = 'identity',  fill = '#3CA9FC') + xlab("room_type") + 
+                      stat = 'identity',  fill = '#3CA9FC',color = 'white') + xlab("room_type") + 
   coord_flip() + ggtitle('Room type ') 
 
 
@@ -235,9 +249,12 @@ plot2 <- high_price %>%
   summarise(counts = n()) %>%
   arrange(desc(counts)) %>% 
     ggplot() + geom_bar(aes(x = reorder(bedrooms, counts), y = counts), 
-                      stat = 'identity',fill = '#3CA9FC') + xlab('number of bedrooms')+
+
+                      stat = 'identity',fill = '#3CA9FC', color = 'white') + xlab('number of bedrooms')+
+
   coord_flip() + ggtitle('Number of bedrooms ') 
   
+
 
 grid.arrange(plot1, plot2, ncol=2)
 ```
@@ -267,15 +284,14 @@ sbbox3 <- make_bbox(lon = data_map_price$longitude, lat = data_map_price$latitud
 ny_map_price <- get_map(location = sbbox3, maptype = "satellite", source = "google")
 ggmap(ny_map_price) + 
   geom_point(data = data_map_price, mapping = aes(x = longitude, y = latitude, color = price_group), size = 1, alpha = 0.5) +
-  scale_color_brewer(palette = "Dark2")
-
+  scale_color_brewer(palette = "Dark2") + 
+  ggtitle("Listings by Price Range")
 
 ```
 Most of the listings are among $100-$250 per night and the closer we are to new york downtown, the higher the price. The purple points indicate expensive listings above $250 per night. We can rarely see listings that cost more than $500 per night.
 
+Indeed, price is largely affected by location. To better illustrate, we plotted the average price per night for the five neighborhoods.
 
-
-Indeed, price is largely affected by location. To better illustrate, we plotted the average price per night for the five neighborhoods and we can see that Bronx, Staten Island, Queens are almost the same. Brooklyn and Manhattan are more expensice by about $50 to $100 per night, which is a large amount considering our majority of the prices are around $100 per night. 
 
 ```{r echo = FALSE}
 #average price for different area
@@ -293,6 +309,8 @@ ggplot(avg_airbnb) +
 
 ```
 
+We can see that Bronx, Staten Island, Queens are almost the same. Brooklyn and Manhattan are more expensice by about $50 to $100 per night, which is a large amount considering our majority of the prices are around $100 per night. 
+
 ```{r echo = FALSE}
 #Price distribution of different neighborhood 
 ggplot(airbnb_cleaned, aes(x= price, color = neighbourhood_group_cleansed)) + geom_density() +
@@ -302,10 +320,59 @@ ggplot(airbnb_cleaned, aes(x= price, color = neighbourhood_group_cleansed)) + ge
 
 ```
 
+The price distribution for different neighborhoods share the same shape. They have relatively the same variance but different mean, which corresponds to our previous observation. 
 
-### Are Deposite and Clearning Fee Proportional to Price?
+### Are Deposite and Cleaning Fee Proportional to Price?
+
+When we are browing through different listings, the price that Airbnb site displays does not include the deposite needed or the cleaning fee. We are interested in whether the deposit and cleaning fee are proportional to the listing price because intuitively we think they are. 
+
+```{r, echo = FALSE}
+
+plot1 <- ggplot(data = airbnb_cleaned, aes(x = cleaning_fee)) + 
+  geom_histogram(aes(y=..density..),binwidth = 20, color = 'white', fill = '#3CA9FC')+
+  geom_density() +
+  ggtitle("Distribution of cleaning fees($)")
 
 
+plot2 <-ggplot(data = airbnb_cleaned, aes(x = security_deposit)) + 
+  geom_histogram(aes(y=..density..),binwidth = 50, color = 'white', fill = '#3CA9FC')+
+  geom_density() +
+  ggtitle("Distribution of security deposit($)")
+
+```
+
+
+```{r, echo = FALSE}
+require(gridExtra)
+
+grid.arrange(plot1, plot2, ncol=2)
+
+```
+
+There is only a few of listings with 0 cleaning fees and almost all of them are within $200, which is a pretty high range considering our median listing price per night is $100. There's only 3% of the listings do not require security deposit and surprisingly there are about 0.25% (about 7000 listings) with security deposit of $500. 
+
+We use scatter plots to explore the relationship between price and cleaning fee and security deposit. 
+
+```{r echo=FALSE}
+# Scatter plot of price vs cleaning fee
+temp <- airbnb_cleaned[sample(nrow (airbnb_cleaned)), ] 
+
+plot1 <- ggplot(temp,aes(x = price, y = cleaning_fee)) + 
+  geom_point(color = '#3CA9FC', alpha = 0.5) +
+  ggtitle("Price vs Cleaning Fee") +scale_color_brewer(palette = "Dark2")
+
+plot2 <- ggplot(temp,aes(x = price, y = security_deposit)) + 
+  geom_point(color = '#3CA9FC', alpha = 0.5) +
+  ggtitle("Price vs Security Deposit") +scale_color_brewer(palette = "Dark2")
+
+require(gridExtra)
+
+grid.arrange(plot1, plot2, ncol=2)
+
+```
+
+
+We did not observe any obvious pattern with price vs cleaning fee or price vs security deposit. For the scatterplot of price vs security deposit, there are some horizontal lines because security deposit tend to be set to integers so the "lines" appear because they are discrete data. 
 
 ### Does Room Type Affect Price?
 Room type is also an important factor customers care about. 
@@ -323,9 +390,9 @@ ggplot(airbnb_cleaned, aes(x= price, color = room_type)) + geom_density() +
 
 First, we take a look at the price distribution for different room type. We could 
 see that entire home/apt and hotel/room have realative higher price than private room 
-and shared room, which is reasonable. Additionally, shared room has realtive lowest price in the 
-market. These findings does not violate our common sense. We continue exploring the price distribution 
+and shared room, which is reasonable. Additionally, shared room has realtive lowest price in the market. These findings does not violate our common sense. We continue exploring the price distribution 
 for different room type in four neighbourhoods.
+
 
 
 ```{r echo = FALSE}
@@ -358,7 +425,10 @@ sbbox1 <- make_bbox(lon = data_map_room$longitude, lat = data_map_room$latitude,
 ny_map_room <- get_map(location = sbbox1, maptype = "satellite", source = "google")
 ggmap(ny_map_room) + 
   geom_point(data = data_map_room, mapping = aes(x = longitude, y = latitude, color = room_type), size = 1, alpha = 0.5) + 
-  scale_fill_brewer(palette = "Dark2")
+
+  scale_fill_brewer(palette = "Dark2") + 
+  ggtitle("Listings by Room Type")
+
 ```
 
 Surprisingly, at such an expensive living area like Manhattan, lots of listings 
@@ -367,9 +437,10 @@ but they actually also have relative good qualities (instead of being all
 shared rooms and small private rooms).
 
 
-
-
 ### Does Property Type Affect Price?
+
+
+We use a stacked bar chart to show the proportion of different property type of listings across five neiborhoods. 
 
 
 ```{r echo = FALSE, message = FALSE, warning = FALSE}
@@ -380,10 +451,10 @@ group_by(neighbourhood_group_cleansed) %>%
 mutate(prop = freq/sum(freq)) %>%
 ungroup()
 
-ggplot(df2,
-aes(x = neighbourhood_group_cleansed, y = prop, fill = property_type)) +
+ggplot(df2, aes(x = neighbourhood_group_cleansed, y = prop*100, fill = property_type)) +
 geom_bar(stat = "identity") + labs(x = "Neighborhood",
-y = "Proportion",
+y = "Proportion (%)",
+
 title = "Neighborhood by Property Type") +
 theme(legend.title = element_blank()) + 
   scale_fill_brewer(palette = "Dark2")
@@ -391,8 +462,10 @@ theme(legend.title = element_blank()) +
 ```
 
 
+Most of the listings are Apartments, followed by House. Manhattan has the most aprtments and Staten Island has the most House. Interestingly, Manhatton barely has any Houses, which makes sense because Manhattan has super high population density and has a lot more Apartments in order to hold more people. We can also observe that Manhatton, Brooklyn and Queens listings have a bigger variety in property types, including Loft and even Townhouse. 
 
 ```{r echo = FALSE}
+
 ## map for different property type
 data_map_property <- data[sample(nrow(data)),] %>% filter(property_type %in% c('Apartment', 'House', 'Townhouse', 'Condominium', 'Loft','Guest suite', 'Serviced apartment', 'Hotel')) %>% select(id, longitude, latitude, property_type)
 sbbox2 <- make_bbox(lon = data_map_property$longitude, lat = data_map_property$latitude, f = .001)
@@ -400,14 +473,16 @@ sbbox2 <- make_bbox(lon = data_map_property$longitude, lat = data_map_property$l
 ny_map_property <- get_map(location = sbbox2, maptype = "satellite", source = "google")
 ggmap(ny_map_property) + 
   geom_point(data = data_map_property, mapping = aes(x = longitude, y = latitude, color = property_type), size = 1, alpha = 0.5) + 
-  scale_fill_brewer(palette = "Dark2")
+  scale_fill_brewer(palette = "Dark2") +
+  ggtitle("Listings by Property Type")
 
 ```
 
 
+As observed before, the majority are Apartments and Hotels. The closer to the center of the New York downtown area, the more apartments and less houses we have. 
 
+###  Are There any Correlation Between Price and Other Variables?
 
-### What's the correlation between price and other variables
 There are other variables may be important factors that affects price, such as 
 number of reveiws, number of minimum night, host response rate, and review scores rating.
 However, from the pairwise scatter plot, we could see that price actually does not 
@@ -421,9 +496,10 @@ Therefore, we could see that a high price does not guarantee a good services.
 ```{r echo=FALSE, message = FALSE, warning = FALSE}
 #price vs number_of_reveiws, minimum_night, host_response_rate, review_scores_rating
 pairPlot <- airbnb_cleaned[,c("price", "number_of_reviews", "minimum_nights", "host_response_rate", "review_scores_rating") ]
-ggpairs(pairPlot)
+ggpairs(pairPlot, mapping=ggplot2::aes(alpha = 0.5))
 
 ```
+
 
 
 
@@ -502,94 +578,174 @@ customers' assessement of the value of the stay.
 Therefore, we conclude that hosts should pay attention to cleaning of their rooms 
 and they should not give exaggerated descriptions to their listings. 
 
-## Amenities
-###
+
+
 ## Interactive
+
+We implemented a Shiny app for [Interactive New York Airbnb Listings Map](https://ysyang.shinyapps.io/AirbnbMap/). The price shown on the Airbnb listings is just base price per night and the guests included varies from listing to listing. To be compariable, we calculated the price per person per night. This Shiny app is able to faciliate exploration of the listings from potential custerms' point of view, by filtering how many person to stay, the price range, room type and whether the host is a superhost. The box plot will provide a summary of the filtered listings by neighbourhood. By clicking on the map, there will a popup with some information about the picked listing and a link for further investigation. The users should be aware that there are additional charges of cleaning fee per stay for some listing. On top of all above, there is a **13%** service charge from Airbnb!
+
+
+
+```{r,eval=FALSE, include=FALSE}
+###shiny app.R file
+#load libraries
+library(shiny)
+library(leaflet)
+library(tidyverse)
+library(leaflet.extras)
+library(rgdal)
+library(ggplot2)
+load('data.RData')
+
+# data<-data_cleaned%>%dplyr::select(id,listing_url, zipcode,latitude, longitude,neighbourhood_group_cleansed,
+#                                    cleaning_fee,price,
+#                                    review_scores_rating,room_type,host_is_superhost,
+#                                    accommodates,guests_included,extra_people)
+# 
+min_pax=min(data$accommodates)
+max_pax=max(data$accommodates)
+min_price=min(data$price)
+max_price=max(data$price)
+
+# for(i in min_pax:max_pax){
+#     data[,paste0('price_',i,'pax_avg')]<-data%>%
+#         rowwise%>%
+#         mutate(temp= ifelse(accommodates<i,NA,round((price+max(0,(i-guests_included))*extra_people)/i)))%>%
+#         .$temp
+# }
+sel_dat<-data
+
+ui <- fluidPage(
+    sidebarLayout(
+        mainPanel( 
+            #this will create a space for us to display our map
+            tags$style(type = "text/css", "#mymap {height: calc(100vh - 20px) !important;}"),
+            leafletOutput(outputId = "mymap")
+            ),
+        
+        sidebarPanel(top = 60, left = 20, 
+            h4("Interactive New York Airbnb Listings Map"),
+            fluidRow( 
+                column(6,
+                       numericInput("pax","Persons to Check In",min_pax,min=min_pax,max=max_pax,step=1)
+                )
+            ),
+           sliderInput("price",label="Price per Person per Night",
+                         min = floor(min_price/50)*50, max = ceiling(max_price/50)*50,
+                         value = c(min_price,max_price), pre = "$", sep = ","),
+           fluidRow( 
+               column(6,
+                        checkboxGroupInput("room_type","Room Type",
+                                             c("Entire home/apt","Private room", "Shared room" ,"Hotel room"),
+                                             selected = c("Entire home/apt","Private room", "Shared room" ,"Hotel room"))
+                          
+                                
+                      ),
+                 column(6,
+                        tags$style(type = "text/css", ".Yes {color:blue;}"),
+                        checkboxGroupInput("super","Host by Superhost",c("Yes(Red)","No(Blue)"),
+                                               selected = c("Yes(Red)","No(Blue)"))
+                        
+                )
+
+         ),
+         
+         plotOutput("boxplot")
+         
+        )
+
+    )
+
+)
+
+server <- function(input, output, session) {
+    pal2 <- colorFactor(
+        palette = c('blue', 'red'),
+        domain = data$host_is_superhost
+    )
+    
+    output$leaf=renderUI({
+        leafletOutput('mymap')
+    })
+    
+    observe({
+        sel_pax<-input$pax
+        
+        price_col<-paste0("price_",sel_pax,"pax_avg")
+        
+        sel_dat<-sel_dat%>%filter(accommodates>=sel_pax)
+        
+        #update price slider
+        updateSliderInput(session, "price", value = c(min(sel_dat[,price_col]),max(sel_dat[,price_col])))
+    })
+    
+    dataFiltered<-reactive({
+        sel_pax<-input$pax
+        price_col<-paste0("price_",sel_pax,"pax_avg")
+        sel_dat%>%mutate(price_check = get(price_col))%>%
+            filter(price_check>=input$price[1] & price_check<=input$price[2])%>%
+            filter(room_type%in%input$room_type)%>%
+            filter(host_is_superhost%in%as.logical(input$super=="Yes(Red)"))%>%
+            filter(accommodates>=sel_pax)
+    })
+    
+    #create the map
+    output$mymap <- renderLeaflet({
+        leaflet() %>% 
+            setView(-73.90, 40.75, zoom = 11) %>%
+            addTiles() %>%
+            addCircles(data = dataFiltered(), lat = ~ latitude, lng = ~ longitude, weight = 1, 
+                       radius = 20, popup = ~paste0("Price: $", price_check, "<br>",
+                                                   "Cleaning Fee: $", cleaning_fee, " per stay<br>",
+                                                   "Neighbourhood: ",neighbourhood_group_cleansed, "<br>",
+                                                   "Review Score: ", review_scores_rating, "<br>",
+                                                   "Superhost: ",host_is_superhost,"<br>",
+                                                   "Max Capacity: ", accommodates, "<br>",
+                                                   '<a href=',listing_url,'>Link to Listing</a>'),
+                                                  
+                       label = ~as.character(paste0("Price: $", sep = " ", price_check)), 
+                       color = ~pal2(host_is_superhost), fillOpacity = 0.5)
+    })
+    
+    #create boxplpt
+    output$boxplot<-renderPlot({
+        ggplot()+
+            geom_boxplot(data=dataFiltered(),
+                         aes(x=fct_rev(fct_infreq(neighbourhood_group_cleansed)),y=price_check),varwidth = T)+
+            coord_flip()+
+            labs(y = 'Price',
+                 x = '',
+                 title = 'Distribution of Price per Person per Night')+
+            geom_text(data=dataFiltered()%>%group_by(neighbourhood_group_cleansed)%>%
+                          count()%>%ungroup()%>%arrange(-n),
+                      aes(x=neighbourhood_group_cleansed,
+                          y=min(dataFiltered()$price_check),label=n),
+                      vjust=-2)+
+            geom_text(data=dataFiltered()%>%group_by(neighbourhood_group_cleansed)%>%
+                          count()%>%ungroup()%>%arrange(n)%>%slice(1),
+                      aes(x=neighbourhood_group_cleansed,
+                          y=min(dataFiltered()$price_check),label="Total Listing"),
+                      vjust=3,hjust=0.1)+
+            theme(axis.text.y = element_text(face="bold",  
+                                             size=10))
+            
+    })
+    
+}
+
+shinyApp(ui, server)
+
+```
 
 
 
 # Conclusion
-From this analysis, we 
+In this project, we analyzed the airbnb listings in New York on September, 2019. Our data shows 
+that most of the listings are among Manhattan and Brooklyn.
+We explored some interesting facts about the airbnb listings price. Most of the listings
+have price under $250. However, there are some listings have extremely high price (even $1000 per night). 
+Theses listings are entire home/apt with more than one bedrooms in Manhattan. 
+Locations is an important factor affect price. The closer the location of the listings are to new york downtown,
+the higher the price. The average price for Manhattan is almost as twice as other neighbourhoods. 
 
 
-
-# Appendix: code
-
-```{r Data Importing and Cleaning, eval = FALSE}
-#Data Importing and Cleaning
-data <- read_csv ("listings_201909.csv", na=c("","NA","N/A"))
-
-##select columns
-dat<-data%>%
-  select(-c(scrape_id:xl_picture_url))%>%
-  select(-host_url, -host_name, -host_location, -host_about,
-         -host_acceptance_rate, -host_thumbnail_url, -host_picture_url, 
-         -host_neighbourhood)%>%
-  select(-street,-city,-state, -market, -smart_location, -country, 
-         -country_code)%>%
-  select(-jurisdiction_names, -license,-weekly_price,-monthly_price, 
-         -square_feet)%>%
-  select(-c(calendar_updated:calendar_last_scraped)) 
-#dim(dat)  #48377    62
-
-##modify data type
-dat<-dat%>%
-  mutate_at(c("host_response_rate","extra_people",
-              "price","security_deposit","cleaning_fee"),
-            str_remove_all,pattern="[%$]")%>%
-  mutate_at(c("host_response_rate","extra_people",
-              "price","security_deposit","cleaning_fee"),
-            as.numeric)
-
-##select lists which have reviews within the last 12 months
-data_cleaned<-dat%>%filter(!is.na(first_review))%>%
-  filter(last_review>='2018-09-01')
-#dim(dat1) #28105    62
-
-#clean NA
-##replace missing values
-data_cleaned$cleaning_fee[is.na(data_cleaned$cleaning_fee)] <- 0
-data_cleaned$security_deposit[is.na(data_cleaned$security_deposit)] <- 0
-data_cleaned<-data_cleaned%>%filter(price>0)
-
-##exclude missing values
-completeFun <- function(data, desiredCols) {
-  completeVec <- complete.cases(data[, desiredCols])
-  return(data[completeVec, ])
-}
-
-data_cleaned <- completeFun(data_cleaned, c("review_scores_value", "review_scores_checkin", "review_scores_accuracy", "review_scores_communication", "review_scores_cleanliness","review_scores_rating","neighbourhood", "review_scores_location", "price", "bedrooms", "beds","bathrooms", "host_identity_verified","zipcode"))
-
-#sort(colSums(is.na(data_cleaned)),decreasing = TRUE)
-
-dim(data_cleaned) #28098
-
-#cleaned data output
-##write_csv(data_cleaned,"data_cleaned.csv")
-```
-
-#Get Amenities data
-```{r amenities, eval = FALSE}
-#split amenities into tidy data frame
-##function to modify amenities string
-split_amenities<-function(x){
-  #x is an input string
-  x<-str_replace_all(x,"[{}]",",") #remove {}
-  temp<-str_split(x,"\\\"")[[1]] #split by \"
-  temp[str_starts(temp,"[,]") | str_ends(temp,"[,]")]<-str_replace_all(temp[str_starts(temp,"[,]") | str_ends(temp,"[,]")],"[,]","|")
-  temp<-str_remove(temp,"^\\|")
-  temp<-str_remove(temp,"\\|$")
-  temp<-temp[temp!=""]
-  out<-paste(temp,collapse = "|")
-  return(out)
-}
-
-#38 list has no amenities
-dat2<-dat1%>%select(id, amenities)%>%
-  rowwise()%>%
-  mutate(amenity = split_amenities(amenities))
-dat3<-dat2%>%separate_rows(amenity,sep="\\|")
-
-##output amenities
-#write_csv(dat3%>%select(-amenities),"./data/amenities_201909.csv")
-```
