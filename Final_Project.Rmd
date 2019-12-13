@@ -236,6 +236,7 @@ plot2 <- high_price %>%
   coord_flip() + ggtitle('Number of bedrooms ') 
   
 
+
 grid.arrange(plot1, plot2, ncol=2)
 ```
 
@@ -410,6 +411,7 @@ We use a stacked bar chart to show the proportion of different property type of 
 ```{r echo = FALSE}
 temp <- dplyr::summarise(group_by(airbnb_cleaned, property_type, neighbourhood_group_cleansed), freq = n())  %>% filter(freq > 70)
 
+
 df2 <- temp %>%
 group_by(neighbourhood_group_cleansed) %>%
 mutate(prop = freq/sum(freq)) %>%
@@ -424,9 +426,11 @@ theme(legend.title = element_blank()) +
   scale_fill_brewer(palette = "Dark2")
 
 ```
+
 Most of the listings are Apartments, followed by House. Manhattan has the most aprtments and Staten Island has the most House. Interestingly, Manhatton barely has any Houses, which makes sense because Manhattan has super high population density and has a lot more Apartments in order to hold more people. We can also observe that Manhatton, Brooklyn and Queens listings have a bigger variety in property types, including Loft and even Townhouse. 
 
 ```{r echo = FALSE}
+
 ## map for different property type
 data_map_property <- data[sample(nrow(data)),] %>% filter(property_type %in% c('Apartment', 'House', 'Townhouse', 'Condominium', 'Loft','Guest suite', 'Serviced apartment', 'Hotel')) %>% select(id, longitude, latitude, property_type)
 sbbox2 <- make_bbox(lon = data_map_property$longitude, lat = data_map_property$latitude, f = .001)
@@ -459,6 +463,10 @@ ggpairs(pairPlot)
 
 ```
 
+
+
+
+## Room type 
 
 
 ## Reviews
