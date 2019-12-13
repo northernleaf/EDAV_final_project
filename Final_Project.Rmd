@@ -29,8 +29,6 @@ options("digits.secs" = 3)
 ```{r load packages}
 library(tidyverse)
 library(ggplot2)
-library(parcoords)
-library(ggplot2)
 library(ggmap)
 library(viridis)
 library(GGally)
