@@ -38,7 +38,6 @@ library(ggplot2)
 library(ggmap)
 library(viridis)
 library(GGally)
-
 ```
 # Introdution
 
@@ -128,7 +127,7 @@ dim(data_cleaned) #28098
 
 # Analysis
 ```{r include = FALSE, message = FALSE, warning = FALSE}
-airbnb_cleaned <- read_csv("/Users/amber/Downloads/Columbia Related/5702 HW/EDAV_final_project/data/data_cleaned.csv")
+airbnb_cleaned <- read_csv("./data/data_cleaned.csv")
 ```
 
 The majority of listings in our data are among Manhattan and Brooklyn. The closer to the new york city downtown area, the denser the listings. 
