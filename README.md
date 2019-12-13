@@ -8,9 +8,9 @@ Airbnb, analyzing the data to find interesting facts about airbnb listing in New
 We hope we could generate some useful insights to provide guidances for
 customers and business suggestions for hosts. 
 
-In this project, we implemented all the analysis in R (Final_Project.Rmd) with focus on data visualization. A Shiny app of interactive map is accessible through https://ysyang.shinyapps.io/AirbnbMap/ (also in folder Map).
+In this project, we implemented all the analysis in R (*Final_Project.Rmd*) with focus on data visualization. A Shiny app of interactive map is accessible through https://ysyang.shinyapps.io/AirbnbMap/ (also in folder *Map*).
 
-Refer to Final_Project.html for full report.
+Refer to *Final_Project.html* for full report.
 
 
 
