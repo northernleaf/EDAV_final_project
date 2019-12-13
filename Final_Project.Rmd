@@ -2,7 +2,7 @@
 title: "Airbnb New York Listings Analysis"
 subtitle: "EDAV Fall 2019 Final Project"
 author: Lin Jiang, Han Xu and Shuo Yang
-date: "Sep 12, 2019"
+date: "12 December, 2019"
 output:
   html_document:
     toc: yes
