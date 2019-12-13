@@ -83,35 +83,6 @@ Our analysis answered some interesting questions about Airbnb listings.
 
 
 
-**amentities for backup**
-
-
-```{r amenities, eval = FALSE}
-#split amenities into tidy data frame
-##function to modify amenities string
-split_amenities<-function(x){
-  #x is an input string
-  x<-str_replace_all(x,"[{}]",",") #remove {}
-  temp<-str_split(x,"\\\"")[[1]] #split by \"
-  temp[str_starts(temp,"[,]") | str_ends(temp,"[,]")]<-str_replace_all(temp[str_starts(temp,"[,]") | str_ends(temp,"[,]")],"[,]","|")
-  temp<-str_remove(temp,"^\\|")
-  temp<-str_remove(temp,"\\|$")
-  temp<-temp[temp!=""]
-  out<-paste(temp,collapse = "|")
-  return(out)
-}
-
-#38 list has no amenities
-dat2<-dat1%>%select(id, amenities)%>%
-  rowwise()%>%
-  mutate(amenity = split_amenities(amenities))
-dat3<-dat2%>%separate_rows(amenity,sep="\\|")
-
-##output amenities
-#write_csv(dat3%>%select(-amenities),"./data/amenities_201909.csv")
-```
-
-
 # Analysis
 ```{r include = FALSE, message = FALSE, warning = FALSE}
 airbnb_cleaned <- read_csv("/Users/amber/Downloads/Columbia Related/5702 HW/EDAV_final_project/data/data_cleaned.csv")
@@ -428,9 +399,6 @@ shared rooms and small private rooms).
 We use a stacked bar chart to show the proportion of different property type of listings across five neiborhoods. 
 
 
-### Does Property Type Affect Price?
-
-
 ```{r echo = FALSE, message = FALSE, warning = FALSE}
 temp <- dplyr::summarise(group_by(airbnb_cleaned, property_type, neighbourhood_group_cleansed), freq = n())  %>% filter(freq > 70)
 
@@ -485,8 +453,8 @@ Therefore, we could see that a high price does not guarantee a good services.
 pairPlot <- airbnb_cleaned[,c("price", "number_of_reviews", "minimum_nights", "host_response_rate", "review_scores_rating") ]
 ggpairs(pairPlot)
 
+```
 
-### What's the correlation between price and other variables
 There are other variables may be important factors that affects price, such as 
 number of reveiws, number of minimum night, host response rate, and review scores rating.
 However, from the pairwise scatter plot, we could see that price actually does not 
@@ -504,23 +472,19 @@ ggpairs(pairPlot)
 
 ```
 
-
-
-## Room type 
-
-
-
 ## Reviews
-### What's the most important variables that affects customers' review
+
+### How to Better Understand Customer Reviews?
 
 Analyzing reviews can provide customers' opinions of valuaing the quality of airbnb
-services. Customers can rate an Airbnb stay in six aspects: cleanliness, accuracy, 
-checking, communication, location, and value which represent an overall feeling of the stay. 
-It is useful to explore what aspect affects the "value rating" the most. Knowing
-customers' cares can help hosts to understand how to provide better service and 
-get better rating results. 
+services. Customers can rate an Airbnb stay in six categories: cleanliness, accuracy, 
+checking, communication, location, and value which we think represent an overall experience of the stay. 
+
+It is useful to explore which category affects the "value rating" the most because we see high "value" being that customers have the best experience during their stay. Knowing what
+customers' care can help hosts to understand what they can focus on improving to provide better service and attract more customers.  
 
 
+We plotted this bar chart to represent the full score percentage in each of the scoring categories. 
 ```{r echo = FALSE,  message = FALSE, warning = FALSE, fig.width= 15}
 dat_review<- airbnb_cleaned%>%
   dplyr::select(starts_with("review"))%>%
@@ -530,24 +494,27 @@ colnames(dat_review)<-gsub("review_scores_","",colnames(dat_review))
 dat_review<-dat_review%>%
   gather(key=others,value="scores",-value)
 
-plot1 <- ggplot(dat_review)+
+ggplot(dat_review)+
   geom_bar(aes(x=fct_reorder(others,scores==10,sum),
                fill=others,alpha=scores==10),position='fill')+
   coord_flip()+
   scale_alpha_discrete(range=c(0.5,1))+
   scale_fill_brewer(palette = "Dark2")+
   labs(y="",x="",
-       title="Percentage of 10 in Review Scores",
+       title="Full Review Score% by Scoring Category",
        alpha="Score of 10",
        fill="Review Score")+
   theme(axis.text.x =element_text(size=19),
          axis.text.y=element_text(size=15),
         axis.title=element_text(size=14,face="bold"))
 
+```
+We can see that about 80% of the listings has full score in cleaning and checkin, meaning most of the customers are most satisfied with these two categories. It's worth noticing that the least customers tend to give full rating score to "Cleaning" category, meaning this might be one factor that hosts in New York need to pay more attention to. 
+
+```{r}
 
 
- 
-plot2<- ggplot(dat_review%>%filter(scores==10)%>%
+ggplot(dat_review%>%filter(scores==10)%>%
          group_by(others,value==10)%>%
          dplyr::summarise(n=sum(value))%>%
          ungroup()%>%group_by(others)%>%
@@ -562,31 +529,20 @@ plot2<- ggplot(dat_review%>%filter(scores==10)%>%
   scale_alpha_discrete(range=c(0.5,1))+
   scale_fill_brewer(palette = "Dark2")+
   labs(y="",x="",
-       title="Percentage of 10 in Review of Value for Other 10-score Reviews",
+       title="Full \"Value\" Review Score% Given Full Score in Each Scoring Category",
        alpha="Score of 10\nin Value",
        fill="Review Score") +
   theme(axis.text.x=element_text(size=19),
         axis.text.y=element_text(size=15),
         axis.title=element_text(size=14,face="bold"))
-
-grid.arrange(plot1, plot2, ncol=2)
 ```
 
-From the graph on the left side, we could see the the percentage of full point for
-each reviews of different aspects. Customers tend not to give full point to cleanliness score.
-From the graph on the right side, we could see that for each aspects, among the listing received
-full point in the specific aspects, what is the percentage that the review of value
-is also full point. Cleanliness has the highest percentage which reflects that if people 
-give full point to cleaning, they may have more tendency to give full point to the reveiw of 
-value. In addition, accuracy has the second highest percentage. Thus, this result
-may imply that cleaning and accuracy are the most important factor that affect
-customers' assessement of the value of the stay.
+Notice that this is the percentage of full "value" score given full score in each of these scoring categories. Therefore, the higher means customers are satisfied with this category along with "value" category, which implies they have better overall experience during their stay. 
 
-Therefore, we conclude that hosts should pay attention to cleaning of their rooms 
+In addition to this, accurary tend to affect how customer evaluate the "value" of their trip. Combining these two, we can say that "Cleaning" and "Accuracy" tend to have higher impact on customer's overall experience of their trip. 
+
+Therefore, we suggest that hosts should pay attention to cleaning of their rooms 
 and they should not give exaggerated descriptions to their listings. 
-
-## Amenities
-###
 
 ## Interactive
 
